@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY src/Client.py ./
+
+# run: python Client.py <host> <port>
+ENTRYPOINT ["python", "Client.py"]
+
+# default args, overridden in docker-compose
+CMD ["compression_app", "8080"]

@@ -1,0 +1,83 @@
+services:
+  cpp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    stdin_open: true
+    tty: true
+    ports:
+      - "8080:8080"
+
+  cppclient:
+    build:
+      context: .
+      dockerfile: Dockerfile.cppclient
+    depends_on:
+      - cpp-server
+    stdin_open: true
+    tty: true
+    command: ["cpp-server", "8080"]
+
+  pyclient:
+    build:
+      context: .
+      dockerfile: Dockerfile.pyclient
+    depends_on:
+      - cpp-server
+    stdin_open: true
+    tty: true
+    command: ["cpp-server", "8080"]
+
+  express-server:
+    build:
+      context: ./express-server
+      dockerfile: Dockerfile.node
+    ports:
+      - "3000:3000"
+    depends_on:
+      - cpp-server
+    environment:
+      - CPP_SERVER_HOST=cpp-server
+      - CPP_SERVER_PORT=8080
+      - JWT_SECRET=your-secret-key-change-in-production
+      - NODE_ENV=development
+    volumes:
+      - ./express-server:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  react-client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    depends_on:
+      - express-server
+    environment:
+      - PORT=3001
+      - REACT_APP_API_URL=http://localhost:3000
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=3001
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./data:/data
+    environment:
+      DATA_DIR: /data
+    command: ["./run_tests"]
+    profiles:
+      - test

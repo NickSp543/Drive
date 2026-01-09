@@ -1,0 +1,177 @@
+.file-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.file-viewer {
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.file-viewer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.file-viewer-title h2 {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0;
+  word-break: break-word;
+}
+
+.file-viewer-type {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.file-viewer-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.btn-icon:hover {
+  background-color: var(--bg-secondary);
+}
+
+.file-viewer-content {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+  min-height: 400px;
+}
+
+.file-viewer-loading,
+.file-viewer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.file-viewer-empty svg {
+  opacity: 0.3;
+  margin-bottom: 16px;
+}
+
+.file-viewer-empty p {
+  margin: 4px 0;
+}
+
+.file-viewer-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.file-viewer-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.file-viewer-image img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.file-viewer-text {
+  min-height: 400px;
+}
+
+.file-viewer-editor {
+  width: 100%;
+  min-height: 500px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.file-viewer-editor:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.file-viewer-preview {
+  padding: 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  min-height: 400px;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .file-viewer {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .file-viewer-header {
+    padding: 16px;
+  }
+
+  .file-viewer-content {
+    padding: 16px;
+  }
+
+  .file-viewer-title h2 {
+    font-size: 18px;
+  }
+}
