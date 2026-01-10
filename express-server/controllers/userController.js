@@ -4,14 +4,8 @@ const { generateToken } = require('../config/jwt');
 async function registerUser(req, res) {
     // Grab the parameters from the request
     const {
-        username,
-        password,
-        image,
-        firstName,
-        lastName,
-        phoneNumber,
-        gender,
-        birthDate
+        username, password, image, firstName, lastName,
+        phoneNumber, gender, birthDate
     } = req.body;
 
     // Validate the required fields
@@ -56,31 +50,54 @@ async function registerUser(req, res) {
         return res.status(400).json({ error: "Invalid birth date" });
     }
 
-    // Taken username
-    if (User.isUsernameTaken(username)) {
-        return res.status(409).json({ error: "Username already exists" });
+    try {
+        // Taken username
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(409).json({ error: "Username already exists" });
+        }
+
+        // Create the user
+        const user = await User.create({
+            username, password, image, firstName, lastName,
+            phoneNumber, gender, birthDate
+        });
+
+        // Generate the JWT token
+        const token = generateToken(user._id);
+
+        res.status(201).json({
+            id: user._id,
+            token,
+            user: {
+                id: user._id,
+                username: user.username,
+                image: user.image,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phoneNumber: user.phoneNumber,
+                gender: user.gender,
+                birthDate: user.birthDate
+            }
+        });
+    } catch (error) {
+        console.error("Register Error:", error);
+        res.status(500).json({ error: "Server error" });
     }
+}
 
-    // Create the user
-    const user = await User.createUser({
-        username,
-        password,
-        image,
-        firstName,
-        lastName,
-        phoneNumber,
-        gender,
-        birthDate
-    });
+// Find a user given it's ID, return the user's data for the user
+async function getUser(req, res) {
+    try {
+        const user = await User.findById(req.params.id); // Get the user via ID
+        
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
 
-    // Generate the JWT token
-    const token = generateToken(user.id);
-
-    res.status(201).json({
-        id: user.id,
-        token,
-        user: {
-            id: user.id,
+        // Get data & Send data
+        res.json({
+            id: user._id,
             username: user.username,
             image: user.image,
             firstName: user.firstName,
@@ -88,84 +105,64 @@ async function registerUser(req, res) {
             phoneNumber: user.phoneNumber,
             gender: user.gender,
             birthDate: user.birthDate
-        }
-    });
-}
-
-// Find a user given it's ID, return the user's data for the user
-function getUser(req, res) {
-    const user = User.getUserById(req.params.id); // Get the user via ID
-    if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
     }
-
-    // Get data
-    const {
-        id,
-        username,
-        image,
-        firstName,
-        lastName,
-        phoneNumber,
-        gender,
-        birthDate
-    } = user;
-
-    // Send data
-    res.json({
-        id,
-        username,
-        image,
-        firstName,
-        lastName,
-        phoneNumber,
-        gender,
-        birthDate
-    });
 }
 
 // Login using username and password, return JWT token if it was successful
 async function login(req, res) {
     const { username, password } = req.body; // Get the parameters from the request
-    const user = await User.validateLogin(username, password); // Check the login credentials
 
-    if (!user) {
-        return res.status(401).json({ error: "Invalid username or password" });
-    }
+    try {
+        const user = await User.findOne({ username });
 
-    // Generate the JWT token
-    const token = generateToken(user.id);
-
-    res.json({
-        token,
-        user: {
-            id: user.id,
-            username: user.username,
-            image: user.image,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            phoneNumber: user.phoneNumber,
-            gender: user.gender,
-            birthDate: user.birthDate
+        // Simple password check (since not encrypted yet)
+        if (!user || user.password !== password) {
+            return res.status(401).json({ error: "Invalid username or password" });
         }
-    });
+
+        // Generate the JWT token
+        const token = generateToken(user._id);
+
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                username: user.username,
+                image: user.image,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phoneNumber: user.phoneNumber,
+                gender: user.gender,
+                birthDate: user.birthDate
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
+    }
 }
 
 // Find the user by username, return basic user info (for sharing/searching)
-function getUserByUsername(req, res) {
-    const user = User.findUserByUsername(req.params.username);
-    if (!user) {
-        return res.status(404).json({ error: "User not found" });
-    }
+async function getUserByUsername(req, res) {
+    try {
+        const user = await User.findOne({ username: req.params.username });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
 
-    // Return basic public info only
-    res.json({
-        id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        image: user.image
-    });
+        // Return basic public info only
+        res.json({
+            id: user._id,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            image: user.image
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
+    }
 }
 
 module.exports = { registerUser, getUser, login, getUserByUsername };

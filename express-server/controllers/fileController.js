@@ -1,414 +1,227 @@
-const fileModel = require('../models/fileModel');
-const userModel = require('../models/userModel');
-const permissionModel = require("../models/permissionModel");
+const File = require('../models/fileModel');
+const Permission = require('../models/permissionModel');
 const { sendToCppEngine } = require('../services/socketService');
+const mongoose = require('mongoose');
 
-// Get user ID from JWT authentication (in the middleware folder)
-const getUserId = (req, res) => {
-    // The middleware sets the req.userId
-    return req.userId;
-};
+// Helper to validate MongoDB ObjectId
 
-function parseIdOr404(value) {
-  const n = Number(value);
-  return Number.isInteger(n) && n > 0 ? n : null;
+const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+function stripCppOkHeader(s) { 
+    return String(s ?? "").replace(/^\s*200\s+ok\s*/i, "").trim();
 }
 
-function ensureCanReadOr404(req, res, me, fileId) {
-  const file = fileModel.getById(fileId);
-  if (!file) {
-    res.status(404).json({ error: "File not found" });
-    return null;
-  }
-  const role = permissionModel.getEffectiveRoleForFile(fileId, me);
-  if (!permissionModel.canRead(role)) {
-    res.status(404).json({ error: "File not found" });
-    return null;
-  }
-  return file;
+function cppStatus(raw) {
+    const s = String(raw ?? "").trimStart();
+    const m = s.match(/^(\d{3})\b/);
+    return m ? Number(m[1]) : null;
 }
 
-function ensureCanWriteOr404(req, res, me, fileId) {
-  const file = fileModel.getById(fileId);
-  if (!file) {
-    console.log(`[PERMISSION] File ${fileId} not found`);
-    res.status(404).json({ error: "File not found" });
-    return null;
-  }
-  const role = permissionModel.getEffectiveRoleForFile(fileId, me);
-  console.log(`[PERMISSION] User ${me} has role '${role}' for file ${fileId}`);
-  if (!permissionModel.canWrite(role)) {
-    console.log(`[PERMISSION] Role '${role}' cannot write`);
-    res.status(404).json({ error: "File not found" });
-    return null;
-  }
-  return file;
+function escapeData(data) {
+    // Escape only for C++ protocol
+    return (data || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
 }
 
-function ensureOwnerOr404(req, res, me, fileId) {
-  const file = fileModel.getById(fileId);
-  if (!file) {
-    res.status(404).json({ error: "File not found" });
-    return null;
-  }
-  const role = permissionModel.getRoleForUser(fileId, me);
-  if (role !== "owner") {
-    res.status(404).json({ error: "File not found" });
-    return null;
-  }
-  return file;
-}
-
-// Strip C++ server "200 ok\n\n" header if present
-function stripCppOkHeader(s) {
-  return String(s ?? "").replace(/^\s*200\s+ok\s*\r?\n\r?\n/i, "");
-}
-
-// GET /api/files - Get files and folders
-exports.getFiles = (req, res) => {
-    const userId = getUserId(req, res);
-    if (!userId) return;
+// Internal Helper: Check permissions locally
+async function checkRoleLocal(fileId, userId, depth = 0) {
+    if (!fileId || !userId) return null;
+    if (depth > 10) return null; 
 
     try {
-        // Support query parameters for filtering
-        const parentId = req.query.parentId;
-        const onlyFolders = req.query.folders === 'true'; // ?folders=true
-        const onlyFiles = req.query.files === 'true'; // ?files=true
-        const view = req.query.view; // View type: my-drive, shared, starred, recent, trash
+        const file = await File.findById(fileId);
+        if (!file) return null;
 
-        let allItems;
+        const ownerId = file.userId ? file.userId.toString() : "";
+        const currentUserId = userId.toString();
 
-        if (parentId !== undefined) {
-            //  parentId - get items in specific folder
-            const parsedParentId = parentId === 'null' ? null : parseIdOr404(parentId);
-            if (parentId !== 'null' && !parsedParentId) {
-                return res.status(400).json({ error: "Invalid parentId" });
-            }
-            allItems = fileModel.listInFolder(userId, parsedParentId);
+        if (ownerId === currentUserId) return 'owner';
+
+        const perm = await Permission.findOne({ fileId, userId });
+        if (perm) return perm.role;
+
+        if (file.parentId) {
+            return checkRoleLocal(file.parentId, userId, depth + 1);
+        }
+    } catch (err) {
+        console.error("Role check error:", err);
+        return null;
+    }
+    return null;
+}
+
+//CONTROLLER METHODS
+exports.getFiles = async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const { parentId, folders, files, view } = req.query;
+        let query = {};
+
+        if (view === 'starred') {
+            query = { userId, isStarred: true, isTrashed: false };
+        } else if (view === 'trash') {
+            query = { userId, isTrashed: true };
+        } else if (view === 'recent') {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            query = { userId, isTrashed: false, createdAt: { $gte: sevenDaysAgo } };
+        } else if (view === 'shared') {
+            const perms = await Permission.find({ userId });
+            const fileIds = perms.map(p => p.fileId);
+            query = { _id: { $in: fileIds }, isTrashed: false, userId: { $ne: userId } };
         } else {
-            // Get all accessible items
-            const allAccessible = fileModel.listForUser(userId);
-
-            // Apply view-based filtering
-            if (view === 'starred') {
-                // Show only starred items (not trashed)
-                allItems = allAccessible.filter(item => item.isStarred && !item.isTrashed);
-            } else if (view === 'shared') {
-                // Show only items shared BY others (not owned by current user, not trashed)
-                allItems = allAccessible.filter(item => {
-                    const directRole = permissionModel.getRoleForUser(item.id, userId);
-                    const isOwner = item.ownerId === userId;
-                    return directRole !== null && !isOwner && !item.isTrashed;
-                });
-            } else if (view === 'trash') {
-                // Show only trashed items owned by user
-                allItems = allAccessible.filter(item => item.isTrashed && item.ownerId === userId);
-            } else if (view === 'recent') {
-                // Show recently created items (last 7 days, not trashed)
-                const sevenDaysAgo = new Date();
-                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                allItems = allAccessible.filter(item => {
-                    if (item.isTrashed) return false;
-                    const createdDate = new Date(item.createdAt);
-                    return createdDate >= sevenDaysAgo;
-                });
-                // Sort by date, newest first
-                allItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            query = { userId, isTrashed: false };
+            if (parentId && parentId !== 'null') {
+                if (!isValidId(parentId)) return res.status(400).json({ error: "Invalid parentId" });
+                query.parentId = parentId;
             } else {
-                // DEFAULT (my-drive): Show root-level items PLUS items shared with user (not trashed)
-                allItems = allAccessible.filter(item => {
-                    if (item.isTrashed) return false;
-
-                    // Show if at root level (parentId === null)
-                    if (item.parentId === null) return true;
-
-                    // OR show if user has DIRECT permission AND is NOT the owner
-                    // (meaning someone else shared it with them)
-                    const directRole = permissionModel.getRoleForUser(item.id, userId);
-                    const isOwner = item.ownerId === userId;
-
-                    // Show if: has direct permission AND not the owner (= shared with them)
-                    return directRole !== null && !isOwner;
-                });
+                query.parentId = null;
             }
         }
 
-        // Apply filters
-        if (onlyFolders) {
-            allItems = allItems.filter(item => item.isFolder);
-        } else if (onlyFiles) {
-            allItems = allItems.filter(item => !item.isFolder);
-        }
+        if (folders === 'true') query.isFolder = true;
+        if (files === 'true') query.isFolder = false;
 
+        const allItems = await File.find(query).sort({ isFolder: -1, createdAt: -1 });
         res.status(200).json(allItems);
     } catch (error) {
+        console.error("getFiles Error:", error);
         res.status(500).json({ error: "Failed to retrieve files" });
     }
 };
 
-// GET /api/files/:id - Get file or folder by ID
 exports.getFileById = async (req, res) => {
-    const userId = getUserId(req, res);
-    if (!userId) return;
-
-    const fileId = parseIdOr404(req.params.id);
-    if (!fileId) return res.status(404).json({ error: "File not found" });
+    const userId = req.userId;
+    const fileId = req.params.id;
+    if (!isValidId(fileId)) return res.status(404).json({ error: "File not found" });
 
     try {
-        const file = ensureCanReadOr404(req, res, userId, fileId);
-        if (!file) return;
+        const file = await File.findById(fileId);
+        if (!file) return res.status(404).json({ error: "File not found" });
 
-        // If it's a folder, optionally include contents
+        const role = await checkRoleLocal(fileId, userId);
+        if (!role) {
+             return res.status(404).json({ error: "File not found (Permission denied)" });
+        }
+
         if (file.isFolder) {
             const includeContents = req.query.contents === 'true';
-            
             if (includeContents) {
-                const contents = fileModel.listInFolder(userId, fileId);
-                return res.status(200).json({
-                    ...file,
-                    contents: contents
-                });
+                const contents = await File.find({ parentId: fileId, isTrashed: false });
+                return res.status(200).json({ ...file.toObject(), contents });
             }
-            
             return res.status(200).json(file);
         }
 
-        // Existing file logic: fetch from C++ server
-        if (file.name && file.storageKey) {
-            try {
-                const cppData = await sendToCppEngine(`get ${file.storageKey}`);
-
-                if (cppData.startsWith("4")) {
-                    return res.status(500).json({ error: "C++ server failed to retrieve the file" });
-                }
-
-                file.data = stripCppOkHeader(cppData);
-            } catch (error) {
-                console.error('Failed to fetch from C++ server:', error);
-            }
-        }
-
+        // Return the CLEAN data from MongoDB directly.
         res.status(200).json(file);
     } catch (error) {
-        res.status(500).json({ error: "Failed to retrieve file" });
+        console.error("getFileById Error:", error);
+        res.status(500).json({ error: "Internal Server Error during file fetch" });
     }
 };
 
-// POST /api/files - Create new file OR folder
 exports.createFile = async (req, res) => {
-    const userId = getUserId(req, res);
-    if (!userId) return;
-
+    const userId = req.userId;
     const { name, data, parentId, isFolder } = req.body;
 
-    if (!name) {
-        return res.status(400).json({ error: "Name is required" });
-    }
+    
 
-    // Folders shouldn't have data
-    if (isFolder && data) {
-        return res.status(400).json({ error: "Folders cannot have data" });
-    }
+    if (!name) return res.status(400).json({ error: "Name is required" });
 
     try {
-        // If parentId is provided, verify user has write access to parent
         if (parentId) {
-            const parsedParentId = parseIdOr404(parentId);
-            if (!parsedParentId) {
-                return res.status(404).json({ error: "Parent folder not found" });
-            }
-            const parent = fileModel.getById(parsedParentId);
-            if (!parent) {
-                return res.status(404).json({ error: "Parent folder not found" });
-            }
-            if (!parent.isFolder) {
-                return res.status(400).json({ error: "Parent must be a folder" });
-            }
-            const role = permissionModel.getEffectiveRoleForFile(parsedParentId, userId);
-            if (!permissionModel.canWrite(role)) {
-                return res.status(403).json({ error: "No write access to parent folder" });
-            }
+             if (!isValidId(parentId)) return res.status(404).json({ error: "Parent folder not found" });
+             
+             const role = await checkRoleLocal(parentId, userId);
+             if (role !== 'owner' && role !== 'writer') {
+                 return res.status(403).json({ error: "No write access to parent folder" });
+             }
         }
 
-        // Create the item (file or folder)
-        const newFile = fileModel.add(userId, name, data, parentId || null, isFolder || false);
+        // CRITICAL FIX: Save 'data' exactly as received (RAW) to MongoDB.
+        // This ensures images (Base64) remain valid for the browser.
+        const newFile = await File.create({
+            userId,
+            name,
+            parentId: parentId || null,
+            isFolder: isFolder || false,
+            data: isFolder ? null : (data || "") 
+        });
 
-        // If it's a file (not folder), save to C++ Server
         if (!isFolder) {
-            // Escape newlines and backslashes for transmission
-            const escapedData = (data || '')
-                .replace(/\\/g, '\\\\')  // Escape backslashes first
-                .replace(/\n/g, '\\n')   // Escape newlines
-                .replace(/\r/g, '\\r');  // Escape carriage returns
+            const safeData = data ? escapeData(data) : "EMPTY_FILE"; 
+            const response = await sendToCppEngine(`post ${newFile.storageKey} ${safeData}`);
 
-            const response = await sendToCppEngine(`post ${newFile.storageKey} ${escapedData}`);
-
-            if (response.startsWith("400")) {
-                fileModel.delete(newFile.id);
-                return res.status(400).json({ error: "C++ server rejected the file" });
+            if (cppStatus(response) >= 400) {
+                console.warn("C++ Engine warning:", response);
             }
         }
 
-        res.status(201).set('Location', `/api/files/${newFile.id}`).send(); 
+        res.status(201).set('Location', `/api/files/${newFile._id}`).json(newFile); 
     } catch (error) {
+        console.error("createFile Error:", error);
         res.status(500).json({ error: error.toString() }); 
     }
 };
 
-// PATCH /api/files/:id - Update file or folder
 exports.updateFile = async (req, res) => {
-    const userId = getUserId(req, res);
-    if (!userId) return;
-
-    const fileId = parseIdOr404(req.params.id);
+    const userId = req.userId;
+    const fileId = req.params.id;
     const updates = req.body;
 
-    const hasName = updates.name !== undefined;
-    const hasData = updates.data !== undefined;
-    const hasParentId = updates.parentId !== undefined;
-    const hasIsStarred = updates.isStarred !== undefined;
-    const hasIsTrashed = updates.isTrashed !== undefined;
-
-    if (!hasName && !hasData && !hasParentId && !hasIsStarred && !hasIsTrashed) {
-        return res.status(400).json({ error: "No valid fields to update" });
-    }
-
-    if (hasName && String(updates.name).trim() === "") {
-        return res.status(400).json({ error: "Name cannot be empty" });
-    }
-
-    const cppStatus = (raw) => {
-        const s = String(raw ?? "").trimStart();
-        const m = s.match(/^(\d{3})\b/);
-        return m ? Number(m[1]) : null;
-    };
+    if (!isValidId(fileId)) return res.status(404).json({ error: "File not found" });
 
     try {
-        // For starring, only need read permission; for other updates need write permission
-        const needsWrite = hasName || hasData || hasParentId || hasIsTrashed;
+        const file = await File.findById(fileId);
+        if (!file) return res.status(404).json({ error: "File not found" });
 
-        let file;
-        if (needsWrite) {
-            file = ensureCanWriteOr404(req, res, userId, fileId);
-            if (!file) {
-                console.log(`[UPDATE] User ${userId} does not have write permission for file ${fileId}`);
-                return;
-            }
-            console.log(`[UPDATE] User ${userId} updating file ${fileId}, has write permission`);
-        } else {
-            // Just starring/unstarring - only needs read permission
-            file = ensureCanReadOr404(req, res, userId, fileId);
-            if (!file) return;
+        const role = await checkRoleLocal(fileId, userId);
+        const canWrite = (role === 'writer' || role === 'owner');
+        const canRead = (role !== null);
+        
+        if (updates.isStarred !== undefined && !canRead) {
+             return res.status(403).json({ error: "No read permission" });
+        } else if (updates.data !== undefined || updates.name !== undefined) {
+             if (!canWrite) return res.status(403).json({ error: "No write permission" });
         }
 
-        // Folders can't have data
-        if (file.isFolder && hasData) {
-            return res.status(400).json({ error: "Cannot set data on a folder" });
+        // Update C++ storage if data changed
+        if (updates.data !== undefined && !file.isFolder) {
+            await sendToCppEngine(`delete ${file.storageKey}`);
+            const escapedData = escapeData(updates.data); // Escape for C++ only
+            await sendToCppEngine(`post ${file.storageKey} ${escapedData}`);
         }
 
-        // If moving to a new parent, check permissions and cycles
-        if (hasParentId) {
-            const newParentId = updates.parentId ? parseIdOr404(updates.parentId) : null;
-            
-            if (newParentId) {
-                const parent = fileModel.getById(newParentId);
-                if (!parent) {
-                    return res.status(404).json({ error: "Parent folder not found" });
-                }
-                if (!parent.isFolder) {
-                    return res.status(400).json({ error: "Parent must be a folder" });
-                }
-                
-                const role = permissionModel.getEffectiveRoleForFile(newParentId, userId);
-                if (!permissionModel.canWrite(role)) {
-                    return res.status(403).json({ error: "No write access to target folder" });
-                }
-
-                // Check for cycles if moving a folder
-                if (file.isFolder && fileModel.wouldCreateCycle(fileId, newParentId)) {
-                    return res.status(400).json({ error: "Cannot move folder: would create circular reference" });
-                }
-            }
-        }
-
-        // If updating file data, update C++ server
-        if (hasData && !file.isFolder) {
-            const delRes = await sendToCppEngine(`delete ${file.storageKey}`);
-            const delCode = cppStatus(delRes);
-            if (delCode >= 400 && delCode !== 404) {
-                return res.status(500).json({ error: "C++ server failed to delete existing file data" });
-            }
-
-            // Escape newlines and backslashes for transmission
-            const escapedData = (updates.data || '')
-                .replace(/\\/g, '\\\\')  // Escape backslashes first
-                .replace(/\n/g, '\\n')   // Escape newlines
-                .replace(/\r/g, '\\r');  // Escape carriage returns
-
-            const postRes = await sendToCppEngine(`post ${file.storageKey} ${escapedData}`);
-            const postCode = cppStatus(postRes);
-            if (postCode >= 400) {
-                return res.status(500).json({ error: "C++ server rejected the updated file data" });
-            }
-        }
-
-        const toStore = {};
-        if (hasData) toStore.data = updates.data;
-        if (hasName) toStore.name = String(updates.name).trim();
-        if (hasParentId) toStore.parentId = updates.parentId ? parseIdOr404(updates.parentId) : null;
-        if (hasIsStarred) toStore.isStarred = Boolean(updates.isStarred);
-        if (hasIsTrashed) toStore.isTrashed = Boolean(updates.isTrashed);
-
-        fileModel.update(fileId, toStore);
-
-        res.status(204).send();
+        // MongoDB update
+        const updatedFile = await File.findByIdAndUpdate(fileId, updates, { new: true });
+        res.status(200).json(updatedFile);
     } catch (error) {
+        console.error("updateFile Error:", error);
         res.status(500).json({ error: error.toString() });
     }
 };
 
-// DELETE /api/files/:id - Delete file or folder (soft delete or permanent)
 exports.deleteFile = async (req, res) => {
-    const userId = getUserId(req, res);
-    if (!userId) return;
+    const userId = req.userId;
+    const fileId = req.params.id;
+    const permanent = req.query.permanent === 'true'; 
 
-    const fileId = parseIdOr404(req.params.id);
-    const permanent = req.query.permanent === 'true'; // ?permanent=true for permanent delete
+    if (!isValidId(fileId)) return res.status(404).json({ error: "File not found" });
 
     try {
-        const file = fileModel.getById(fileId);
-        if (!file) {
-            return res.status(404).json({ error: "File not found" });
-        }
+        const file = await File.findById(fileId);
+        if (!file) return res.status(404).json({ error: "File not found" });
 
-        // Check if user is the owner (only owners can delete)
-        const role = permissionModel.getRoleForUser(fileId, userId);
-        if (role !== "owner") {
-            return res.status(404).json({ error: "File not found" });
+        if (file.userId.toString() !== userId) {
+             return res.status(403).json({ error: "Only owner can delete" });
         }
 
         if (file.isTrashed || permanent) {
-            // File is already in trash OR permanent delete requested - delete permanently
-            if (file.isFolder) {
-                await deleteFolderRecursive(fileId);
-            } else {
-                // Delete file from C++ server
-                try {
-                    await sendToCppEngine(`delete ${file.storageKey}`);
-                } catch (error) {
-                    console.error(`Failed to delete file ${fileId} from C++ server:`, error);
-                }
-                // Delete from local storage
-                fileModel.delete(fileId);
-            }
+            await deleteRecursive(file);
         } else {
-            // First delete - move to trash (soft delete)
-            if (file.isFolder) {
-                // Mark folder and all children as trashed
-                await trashFolderRecursive(fileId);
-            } else {
-                fileModel.update(fileId, { isTrashed: true });
-            }
+            await trashRecursive(file);
         }
 
         res.status(204).send();
@@ -417,139 +230,67 @@ exports.deleteFile = async (req, res) => {
     }
 };
 
-// Helper function to recursively trash folders and all contents
-async function trashFolderRecursive(folderId) {
-    const children = fileModel.getChildren(folderId);
-
-    // Trash all children recursively
-    for (const child of children) {
-        if (child.isFolder) {
-            await trashFolderRecursive(child.id);
-        } else {
-            fileModel.update(child.id, { isTrashed: true });
+async function trashRecursive(file) {
+    if (file.isFolder) {
+        const children = await File.find({ parentId: file._id });
+        for (const child of children) {
+            await trashRecursive(child);
         }
     }
-
-    // Finally, trash the folder itself
-    fileModel.update(folderId, { isTrashed: true });
+    await File.findByIdAndUpdate(file._id, { isTrashed: true, trashedAt: new Date() });
 }
 
-// Helper function to recursively delete folders and all contents
-async function deleteFolderRecursive(folderId) {
-    // Use the new getChildren method from fileModel
-    const children = fileModel.getChildren(folderId);
-
-    // Delete all children recursively
-    for (const child of children) {
-        if (child.isFolder) {
-            // Recursively delete subfolders
-            await deleteFolderRecursive(child.id);
-        } else {
-            // Delete file from C++ server
-            try {
-                if (child.storageKey) {
-                    await sendToCppEngine(`delete ${child.storageKey}`);
-                }
-            } catch (error) {
-                console.error(`Failed to delete file ${child.id} from C++ server:`, error);
-            }
-            // Delete file metadata
-            fileModel.delete(child.id);
+async function deleteRecursive(file) {
+    if (file.isFolder) {
+        const children = await File.find({ parentId: file._id });
+        for (const child of children) {
+            await deleteRecursive(child);
         }
+    } else {
+        try {
+             await sendToCppEngine(`delete ${file.storageKey}`);
+        } catch (error) { console.error("C++ delete warning:", error); }
     }
-
-    // Finally, delete the folder itself
-    fileModel.delete(folderId);
-}
-
-// Helper to parse C++ server response status code
-function cppStatus(raw) {
-  const s = String(raw ?? "").trimStart();
-  const m = s.match(/^(\d{3})\b/);
-  return m ? Number(m[1]) : null;
-}
-
-// Helper to strip C++ server 200 Ok header
-function stripCpp200Header(raw) {
-  return String(raw ?? "").replace(/^\s*200\s+Ok\s*\r?\n\r?\n/i, "");
-}
-
-// Helper to parse C++ server list of filenames response
-function parseCppList(raw) {
-  const code = cppStatus(raw);
-  if (code !== 200) return { code, ids: [], raw: String(raw ?? "") };
-
-  const body = stripCpp200Header(raw);
-  const ids = body
-    .split(/\r?\n/)
-    .map(x => x.trim())
-    .filter(Boolean);
-
-  return { code, ids, raw: String(raw ?? ""), body };
-}
-
-// GET /api/search/:query - Search files by name or content
-exports.searchFiles = async (req, res) => {
-    const userId = getUserId(req, res);
-    if (!userId) return;
     
-    const query = String(req.params.query ?? "").trim();
+    await Permission.deleteMany({ fileId: file._id });
+    await File.findByIdAndDelete(file._id);
+}
+
+exports.searchFiles = async (req, res) => {
+    const userId = req.userId;
+    const query = req.params.query;
     if (!query) return res.status(400).json({ error: "Search query is required" });
 
-    const qLower = query.toLowerCase();
-
     try {
-        const visibleItems = fileModel.listForUser(userId);
+        const mongoResults = await File.find({
+            userId,
+            name: { $regex: query, $options: 'i' },
+            isTrashed: false
+        });
 
-        const byKey = new Map();
-        for (const f of visibleItems) {
-            // Only add files with storage keys (not folders)
-            if (!f.isFolder && f.storageKey) {
-                const key = String(f.storageKey);
-                byKey.set(key, f);
+        let contentResults = [];
+        try {
+            const cppRes = await sendToCppEngine(`search ${query}`);
+            if (cppStatus(cppRes) === 200) {
+                const body = stripCppOkHeader(cppRes);
+                const keys = body.split(/\r?\n/).map(k => k.trim()).filter(Boolean);
+                
+                if (keys.length > 0) {
+                    contentResults = await File.find({
+                        storageKey: { $in: keys },
+                        userId,
+                        isTrashed: false
+                    });
+                }
             }
+        } catch (e) { console.error("Search C++ warning:", e); }
+
+        const combined = [...mongoResults];
+        for (const f of contentResults) {
+            if (!combined.find(ex => ex._id.equals(f._id))) combined.push(f);
         }
 
-        const results = [];
-        const addedIds = new Set();
-
-        const addItem = (f) => {
-            if (!f) return;
-            const id = String(f.id);
-            if (addedIds.has(id)) return;
-            addedIds.add(id);
-            results.push(f);
-        };
-
-        // Search both files AND folders by name
-        for (const f of visibleItems) {
-            const name = String(f.name ?? "").toLowerCase();
-            if (name.includes(qLower)) addItem(f);
-        }
-
-        // Send search query to C++ server (for file contents only)
-        const cppRes = await sendToCppEngine(`search ${query}`);
-        const parsed = parseCppList(cppRes);
-
-        if (parsed.code === 404) {
-            return res.status(200).json(results);
-        }
-
-        if (parsed.code >= 400) {
-            return res.status(parsed.code).json({ error: parsed.raw.trim() });
-        }
-
-        if (parsed.code === null) {
-            return res.status(500).json({ error: "Invalid response from C++ server" });
-        }
-
-        // Intersect C++ results with visible files
-        for (const key of parsed.ids) {
-            const f = byKey.get(String(key));
-            addItem(f);
-        }
-        
-        res.status(200).json(results);
+        res.status(200).json(combined);
     } catch (error) {
         res.status(500).json({ error: error.toString() });
     }

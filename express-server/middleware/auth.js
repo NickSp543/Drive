@@ -1,7 +1,7 @@
 const { verifyToken } = require('../config/jwt');
 const User = require('../models/userModel');
 
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // token
 
@@ -9,34 +9,48 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ error: 'Access token required' });
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-        return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+    try {
+        const decoded = verifyToken(token);
+        if (!decoded) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
 
-    const user = User.getUserById(decoded.userId);
-    if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-    }
+        const userId = decoded.userId || decoded.id;
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
 
-    req.userId = decoded.userId;
-    req.user = user;
-    next();
+        req.userId = user._id.toString(); 
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error("Auth Middleware Error:", error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
 };
 
-// Optional authentication - doesn't fail if no token - for registering
-const optionalAuth = (req, res, next) => {
+// Optional authentication for registering
+const optionalAuth = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
-        const decoded = verifyToken(token);
-        if (decoded) {
-            const user = User.getUserById(decoded.userId);
-            if (user) {
-                req.userId = decoded.userId;
-                req.user = user;
+        try {
+            const decoded = verifyToken(token);
+            if (decoded) {
+                const userId = decoded.userId || decoded.id;
+                const user = await User.findById(userId);
+                
+                if (user) {
+                    req.userId = user._id.toString();
+                    req.user = user;
+                }
             }
+        } catch (error) {
+            // Error ignored in optional auth
+            console.log("Optional auth check failed:", error.message);
         }
     }
 
