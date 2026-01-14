@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFiles } from '../../contexts/FileContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { clearContext } = useFiles();
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleLogout = () => {
+    clearContext();
     logout();
     navigate('/login');
   };

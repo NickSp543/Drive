@@ -23,6 +23,18 @@ export const FileProvider = ({ children }) => {
   const [sortOrder, setSortOrder] = useState('asc'); // asc | desc
   const [foldersFirst, setFoldersFirst] = useState(true);
 
+  // Clear all context state
+  const clearContext = useCallback(() => {
+    setFiles([]);
+    setCurrentFolder(null);
+    setCurrentView('my-drive');
+    setLoading(false);
+    setSelectedFile(null);
+    setSortBy('name');
+    setSortOrder('asc');
+    setFoldersFirst(true);
+  }, []);
+
   const toggleSortOrder = () => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   const toggleFoldersFirst = () => setFoldersFirst((prev) => !prev);
 
@@ -359,6 +371,7 @@ export const FileProvider = ({ children }) => {
     setSortBy: setSortByWithDefaultOrder,
     toggleSortOrder,
     toggleFoldersFirst,
+    clearContext,
   };
 
   return <FileContext.Provider value={value}>{children}</FileContext.Provider>;
