@@ -48,7 +48,8 @@ const CreateDialog = ({ type, onClose }) => {
     reader.onload = (event) => {
       setContent(event.target.result);
     };
-    reader.readAsText(file);
+    
+    reader.readAsDataURL(file); 
   };
 
   return (
