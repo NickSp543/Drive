@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useCallback, useMemo } from 'react';
+import { createContext, useState, useContext, useCallback, useMemo, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 
 const FileContext = createContext();
@@ -34,6 +34,18 @@ export const FileProvider = ({ children }) => {
     setSortOrder('asc');
     setFoldersFirst(true);
   }, []);
+
+  // Listen for unauthorized events and clear context
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      clearContext();
+    };
+
+    window.addEventListener('unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+    };
+  }, [clearContext]);
 
   const toggleSortOrder = () => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   const toggleFoldersFirst = () => setFoldersFirst((prev) => !prev);

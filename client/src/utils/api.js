@@ -30,6 +30,8 @@ export const apiFetch = async (endpoint, options = {}) => {
 // handling unauthorized response
     if (response.status === 401) {
       removeToken();
+      // Dispatch custom event to notify contexts to clear
+      window.dispatchEvent(new Event('unauthorized'));
       window.location.href = '/login'; // redirection to login screen
       return null;
     }
