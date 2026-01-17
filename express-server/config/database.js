@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
+
 // MongoDB database connection function
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect('mongodb://mongo:27017/driveDB');
+    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/driveDB';
+    const conn = await mongoose.connect(mongoUri);
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
