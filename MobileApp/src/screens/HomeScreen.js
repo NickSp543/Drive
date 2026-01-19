@@ -15,6 +15,7 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { useFiles } from '../contexts/FileContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const HomeScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
@@ -32,6 +33,7 @@ const HomeScreen = ({ navigation }) => {
     toggleStar,
     searchFiles,
   } = useFiles();
+  const { theme, darkMode, toggleDarkMode } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -55,7 +57,6 @@ const HomeScreen = ({ navigation }) => {
   const [dragItem, setDragItem] = useState(null);
 
   // Display options
-  const [darkMode, setDarkMode] = useState(false);
   const [blockView, setBlockView] = useState(false); // false = list, true = blocks
 
   // Load files on mount only
@@ -405,22 +406,6 @@ const HomeScreen = ({ navigation }) => {
 
   const displayFiles = searchResults !== null ? searchResults : files;
 
-  // Theme colors
-  const theme = {
-    bg: darkMode ? '#1a1a1a' : '#fff',
-    headerBg: darkMode ? '#252525' : '#fff',
-    text: darkMode ? '#e8eaed' : '#202124',
-    textSecondary: darkMode ? '#9aa0a6' : '#5f6368',
-    border: darkMode ? '#3c4043' : '#e0e0e0',
-    itemBg: darkMode ? '#252525' : '#fff',
-    itemBorder: darkMode ? '#3c4043' : '#f1f3f4',
-    searchBg: darkMode ? '#303134' : '#f1f3f4',
-    drawerBg: darkMode ? '#252525' : '#fff',
-    modalBg: darkMode ? '#303134' : '#fff',
-    inputBg: darkMode ? '#3c4043' : '#fff',
-    inputBorder: darkMode ? '#5f6368' : '#dadce0',
-  };
-
   const renderItem = ({ item }) => {
     const itemId = item.id || item._id;
     const dragId = dragItem?.id || dragItem?._id;
@@ -530,7 +515,7 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
         {/* Dark mode toggle button */}
         <TouchableOpacity
-          onPress={() => setDarkMode(!darkMode)}
+          onPress={toggleDarkMode}
           style={styles.headerIconButton}
         >
           <Text style={styles.headerIconText}>{darkMode ? '☀️' : '🌙'}</Text>
@@ -690,22 +675,30 @@ const HomeScreen = ({ navigation }) => {
         onRequestClose={() => setCreateModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.modalBg }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Create New</Text>
             <View style={styles.createTypeContainer}>
               <TouchableOpacity
-                style={[styles.createTypeButton, createType === 'folder' && styles.createTypeActive]}
+                style={[
+                  styles.createTypeButton,
+                  { borderColor: theme.inputBorder },
+                  createType === 'folder' && (darkMode ? styles.createTypeActiveDark : styles.createTypeActive)
+                ]}
                 onPress={() => setCreateType('folder')}
               >
                 <Text style={styles.createTypeIcon}>📁</Text>
-                <Text style={styles.createTypeText}>Folder</Text>
+                <Text style={[styles.createTypeText, { color: theme.text }]}>Folder</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.createTypeButton, createType === 'file' && styles.createTypeActive]}
+                style={[
+                  styles.createTypeButton,
+                  { borderColor: theme.inputBorder },
+                  createType === 'file' && (darkMode ? styles.createTypeActiveDark : styles.createTypeActive)
+                ]}
                 onPress={() => setCreateType('file')}
               >
                 <Text style={styles.createTypeIcon}>📄</Text>
-                <Text style={styles.createTypeText}>File</Text>
+                <Text style={[styles.createTypeText, { color: theme.text }]}>File</Text>
               </TouchableOpacity>
             </View>
 
@@ -719,23 +712,23 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <View style={styles.dividerWithText}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or create manually</Text>
-              <View style={styles.dividerLine} />
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>or create manually</Text>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholder={createType === 'folder' ? 'Folder name' : 'File name'}
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.textSecondary}
               value={newItemName}
               onChangeText={setNewItemName}
             />
             {createType === 'file' && (
               <TextInput
-                style={[styles.modalInput, styles.contentInput]}
+                style={[styles.modalInput, styles.contentInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 placeholder="File content (optional)"
-                placeholderTextColor="#9aa0a6"
+                placeholderTextColor={theme.textSecondary}
                 value={newFileContent}
                 onChangeText={setNewFileContent}
                 multiline
@@ -750,7 +743,7 @@ const HomeScreen = ({ navigation }) => {
                   setNewFileContent('');
                 }}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={[styles.modalCancelText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalCreateButton} onPress={handleCreate}>
                 <Text style={styles.modalCreateText}>Create</Text>
@@ -772,39 +765,39 @@ const HomeScreen = ({ navigation }) => {
           activeOpacity={1}
           onPress={() => setActionModalVisible(false)}
         >
-          <View style={styles.actionModalContent}>
-            <Text style={styles.actionModalTitle}>{selectedItem?.name}</Text>
+          <View style={[styles.actionModalContent, { backgroundColor: theme.modalBg }]}>
+            <Text style={[styles.actionModalTitle, { color: theme.text, borderBottomColor: theme.border }]}>{selectedItem?.name}</Text>
             {!selectedItem?.isFolder && (
               <TouchableOpacity style={styles.actionItem} onPress={handleEdit}>
                 <Text style={styles.actionItemIcon}>✏️</Text>
-                <Text style={styles.actionItemText}>Edit</Text>
+                <Text style={[styles.actionItemText, { color: theme.text }]}>Edit</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.actionItem} onPress={handleRename}>
               <Text style={styles.actionItemIcon}>📝</Text>
-              <Text style={styles.actionItemText}>Rename</Text>
+              <Text style={[styles.actionItemText, { color: theme.text }]}>Rename</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionItem} onPress={handleToggleStar}>
               <Text style={styles.actionItemIcon}>{selectedItem?.isStarred ? '⭐' : '☆'}</Text>
-              <Text style={styles.actionItemText}>
+              <Text style={[styles.actionItemText, { color: theme.text }]}>
                 {selectedItem?.isStarred ? 'Remove star' : 'Add star'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionItem} onPress={handleShare}>
               <Text style={styles.actionItemIcon}>👥</Text>
-              <Text style={styles.actionItemText}>Share</Text>
+              <Text style={[styles.actionItemText, { color: theme.text }]}>Share</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionItem} onPress={handleMove}>
               <Text style={styles.actionItemIcon}>📂</Text>
-              <Text style={styles.actionItemText}>Move to folder</Text>
+              <Text style={[styles.actionItemText, { color: theme.text }]}>Move to folder</Text>
             </TouchableOpacity>
             {currentView === 'trash' && (
               <TouchableOpacity style={styles.actionItem} onPress={handleRestore}>
                 <Text style={styles.actionItemIcon}>♻️</Text>
-                <Text style={styles.actionItemText}>Restore</Text>
+                <Text style={[styles.actionItemText, { color: theme.text }]}>Restore</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={[styles.actionItem, styles.deleteAction]} onPress={handleDelete}>
+            <TouchableOpacity style={[styles.actionItem, styles.deleteAction, { borderTopColor: theme.border }]} onPress={handleDelete}>
               <Text style={styles.actionItemIcon}>🗑️</Text>
               <Text style={[styles.actionItemText, styles.deleteText]}>Delete</Text>
             </TouchableOpacity>
@@ -820,12 +813,12 @@ const HomeScreen = ({ navigation }) => {
         onRequestClose={() => setRenameModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rename</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.modalBg }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Rename</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholder="New name"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.textSecondary}
               value={renameValue}
               onChangeText={setRenameValue}
             />
@@ -834,7 +827,7 @@ const HomeScreen = ({ navigation }) => {
                 style={styles.modalCancelButton}
                 onPress={() => setRenameModalVisible(false)}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={[styles.modalCancelText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalCreateButton} onPress={submitRename}>
                 <Text style={styles.modalCreateText}>Rename</Text>
@@ -852,12 +845,12 @@ const HomeScreen = ({ navigation }) => {
         onRequestClose={() => setEditModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.editModalContent]}>
-            <Text style={styles.modalTitle}>Edit File</Text>
+          <View style={[styles.modalContent, styles.editModalContent, { backgroundColor: theme.modalBg }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Edit File</Text>
             <TextInput
-              style={[styles.modalInput, styles.editInput]}
+              style={[styles.modalInput, styles.editInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholder="File content"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.textSecondary}
               value={editContent}
               onChangeText={setEditContent}
               multiline
@@ -867,7 +860,7 @@ const HomeScreen = ({ navigation }) => {
                 style={styles.modalCancelButton}
                 onPress={() => setEditModalVisible(false)}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={[styles.modalCancelText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalCreateButton} onPress={submitEdit}>
                 <Text style={styles.modalCreateText}>Save</Text>
@@ -885,15 +878,15 @@ const HomeScreen = ({ navigation }) => {
         onRequestClose={() => setMoveModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.moveModalContent]}>
-            <Text style={styles.modalTitle}>Move "{selectedItem?.name}"</Text>
-            <Text style={styles.moveSubtitle}>Select destination folder:</Text>
+          <View style={[styles.modalContent, styles.moveModalContent, { backgroundColor: theme.modalBg }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Move "{selectedItem?.name}"</Text>
+            <Text style={[styles.moveSubtitle, { color: theme.textSecondary }]}>Select destination folder:</Text>
 
             {/* Move to Root option */}
             {currentFolder && (
-              <TouchableOpacity style={styles.folderOption} onPress={moveToRoot}>
+              <TouchableOpacity style={[styles.folderOption, { backgroundColor: theme.inputBg, borderBottomColor: theme.border }]} onPress={moveToRoot}>
                 <Text style={styles.folderOptionIcon}>🏠</Text>
-                <Text style={styles.folderOptionText}>My Drive (root)</Text>
+                <Text style={[styles.folderOptionText, { color: theme.text }]}>My Drive (root)</Text>
               </TouchableOpacity>
             )}
 
@@ -905,22 +898,22 @@ const HomeScreen = ({ navigation }) => {
                 style={styles.folderList}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={styles.folderOption}
+                    style={[styles.folderOption, { backgroundColor: theme.inputBg, borderBottomColor: theme.border }]}
                     onPress={() => moveToFolder(item.id || item._id)}
                   >
                     <Text style={styles.folderOptionIcon}>📁</Text>
-                    <Text style={styles.folderOptionText}>{item.name}</Text>
+                    <Text style={[styles.folderOptionText, { color: theme.text }]}>{item.name}</Text>
                   </TouchableOpacity>
                 )}
               />
             ) : (
               <View style={styles.noFoldersContainer}>
-                <Text style={styles.noFoldersText}>No folders available</Text>
+                <Text style={[styles.noFoldersText, { color: theme.textSecondary }]}>No folders available</Text>
               </View>
             )}
 
             <TouchableOpacity
-              style={styles.moveCancelButton}
+              style={[styles.moveCancelButton, { borderTopColor: theme.border }]}
               onPress={() => setMoveModalVisible(false)}
             >
               <Text style={styles.moveCancelText}>Cancel</Text>
@@ -1166,6 +1159,10 @@ const styles = StyleSheet.create({
   createTypeActive: {
     borderColor: '#1a73e8',
     backgroundColor: '#e8f0fe',
+  },
+  createTypeActiveDark: {
+    borderColor: '#8ab4f8',
+    backgroundColor: '#3c4043',
   },
   createTypeIcon: {
     fontSize: 32,

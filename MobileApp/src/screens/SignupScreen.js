@@ -11,16 +11,22 @@ import {
   ScrollView,
   Image,
   Alert,
-  useColorScheme,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { validateRegistrationForm } from '../utils/validation';
 
 const SignupScreen = ({ navigation }) => {
   const { register } = useAuth();
-  const colorScheme = useColorScheme();
-  const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
+  const { theme: baseTheme, darkMode, toggleDarkMode } = useTheme();
+
+  // Extend theme with signup-specific colors
+  const theme = {
+    ...baseTheme,
+    imagePlaceholderBg: darkMode ? '#3c4043' : '#e8eaed',
+    imagePlaceholderBorder: darkMode ? '#5f6368' : '#dadce0',
+  };
 
   const [formData, setFormData] = useState({
     username: '',
@@ -37,19 +43,6 @@ const SignupScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // Theme colors
-  const theme = {
-    bg: darkMode ? '#1a1a1a' : '#fff',
-    cardBg: darkMode ? '#252525' : '#fff',
-    text: darkMode ? '#e8eaed' : '#202124',
-    textSecondary: darkMode ? '#9aa0a6' : '#5f6368',
-    inputBg: darkMode ? '#303134' : '#fff',
-    inputBorder: darkMode ? '#5f6368' : '#dadce0',
-    placeholder: '#9aa0a6',
-    imagePlaceholderBg: darkMode ? '#3c4043' : '#e8eaed',
-    imagePlaceholderBorder: darkMode ? '#5f6368' : '#dadce0',
-  };
 
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -166,7 +159,7 @@ const SignupScreen = ({ navigation }) => {
           {/* Dark Mode Toggle */}
           <TouchableOpacity
             style={styles.darkModeToggle}
-            onPress={() => setDarkMode(!darkMode)}
+            onPress={toggleDarkMode}
           >
             <Text style={styles.darkModeIcon}>{darkMode ? '☀️' : '🌙'}</Text>
           </TouchableOpacity>

@@ -10,11 +10,13 @@ import {
   Alert,
 } from 'react-native';
 import { useFiles } from '../contexts/FileContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { apiFetch } from '../utils/api';
 
 const ShareScreen = ({ navigation, route }) => {
   const { file } = route.params;
   const { getPermissions, grantPermission, updatePermission, revokePermission } = useFiles();
+  const { theme, darkMode, toggleDarkMode } = useTheme();
 
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,7 @@ const ShareScreen = ({ navigation, route }) => {
   const roles = ['reader', 'writer', 'owner'];
 
   const renderPermission = ({ item }) => (
-    <View style={styles.permissionItem}>
+    <View style={[styles.permissionItem, { borderBottomColor: theme.itemBorder }]}>
       <View style={styles.userInfo}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -136,21 +138,21 @@ const ShareScreen = ({ navigation, route }) => {
           </Text>
         </View>
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>
+          <Text style={[styles.userName, { color: theme.text }]}>
             {item.user?.firstName && item.user?.lastName
               ? `${item.user.firstName} ${item.user.lastName}`
               : item.user?.username || 'Unknown'}
           </Text>
-          <Text style={styles.userEmail}>{item.user?.username || ''}</Text>
+          <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{item.user?.username || ''}</Text>
         </View>
       </View>
 
       {item.role === 'owner' ? (
-        <Text style={styles.ownerBadge}>Owner</Text>
+        <Text style={[styles.ownerBadge, { color: theme.textSecondary }]}>Owner</Text>
       ) : (
         <View style={styles.roleActions}>
           <TouchableOpacity
-            style={styles.roleSelector}
+            style={[styles.roleSelector, { borderColor: theme.inputBorder }]}
             onPress={() => {
               Alert.alert(
                 'Change Role',
@@ -163,8 +165,8 @@ const ShareScreen = ({ navigation, route }) => {
               );
             }}
           >
-            <Text style={styles.roleText}>{item.role}</Text>
-            <Text style={styles.dropdownIcon}>▼</Text>
+            <Text style={[styles.roleText, { color: theme.text }]}>{item.role}</Text>
+            <Text style={[styles.dropdownIcon, { color: theme.textSecondary }]}>▼</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.removeButton}
@@ -178,23 +180,27 @@ const ShareScreen = ({ navigation, route }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={[styles.backIcon, { color: theme.textSecondary }]}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Share "{file.name}"</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Share "{file.name}"</Text>
+        {/* Dark mode toggle */}
+        <TouchableOpacity onPress={toggleDarkMode} style={styles.darkModeButton}>
+          <Text style={styles.darkModeIcon}>{darkMode ? '☀️' : '🌙'}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Add User Section */}
-      <View style={styles.addSection}>
-        <Text style={styles.sectionTitle}>Add people</Text>
+      <View style={[styles.addSection, { borderBottomColor: theme.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Add people</Text>
         <View style={styles.addRow}>
           <TextInput
-            style={styles.usernameInput}
+            style={[styles.usernameInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
             placeholder="Enter username"
-            placeholderTextColor="#9aa0a6"
+            placeholderTextColor={theme.textSecondary}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -204,10 +210,18 @@ const ShareScreen = ({ navigation, route }) => {
           {roles.filter(r => r !== 'owner').map((role) => (
             <TouchableOpacity
               key={role}
-              style={[styles.roleButton, selectedRole === role && styles.roleButtonActive]}
+              style={[
+                styles.roleButton,
+                { borderColor: theme.inputBorder },
+                selectedRole === role && { backgroundColor: theme.roleButtonActiveBg, borderColor: theme.roleButtonActiveBorder }
+              ]}
               onPress={() => setSelectedRole(role)}
             >
-              <Text style={[styles.roleButtonText, selectedRole === role && styles.roleButtonTextActive]}>
+              <Text style={[
+                styles.roleButtonText,
+                { color: theme.textSecondary },
+                selectedRole === role && { color: theme.roleButtonActiveText, fontWeight: '500' }
+              ]}>
                 {role.charAt(0).toUpperCase() + role.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -228,11 +242,11 @@ const ShareScreen = ({ navigation, route }) => {
 
       {/* Current Permissions */}
       <View style={styles.permissionsSection}>
-        <Text style={styles.sectionTitle}>People with access</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>People with access</Text>
         {loading ? (
           <ActivityIndicator size="large" color="#1a73e8" style={styles.loader} />
         ) : permissions.length === 0 ? (
-          <Text style={styles.emptyText}>No one has access yet</Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No one has access yet</Text>
         ) : (
           <FlatList
             data={permissions}
@@ -273,6 +287,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#202124',
     flex: 1,
+  },
+  darkModeButton: {
+    padding: 8,
+  },
+  darkModeIcon: {
+    fontSize: 20,
   },
   addSection: {
     padding: 16,

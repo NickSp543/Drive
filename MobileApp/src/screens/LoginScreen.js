@@ -9,15 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  useColorScheme,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { validateLoginForm } from '../utils/validation';
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useAuth();
-  const colorScheme = useColorScheme();
-  const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
+  const { theme, darkMode, toggleDarkMode } = useTheme();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -26,17 +25,6 @@ const LoginScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // Theme colors
-  const theme = {
-    bg: darkMode ? '#1a1a1a' : '#fff',
-    cardBg: darkMode ? '#252525' : '#fff',
-    text: darkMode ? '#e8eaed' : '#202124',
-    textSecondary: darkMode ? '#9aa0a6' : '#5f6368',
-    inputBg: darkMode ? '#303134' : '#fff',
-    inputBorder: darkMode ? '#5f6368' : '#dadce0',
-    placeholder: '#9aa0a6',
-  };
 
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -79,7 +67,7 @@ const LoginScreen = ({ navigation }) => {
           {/* Dark Mode Toggle */}
           <TouchableOpacity
             style={styles.darkModeToggle}
-            onPress={() => setDarkMode(!darkMode)}
+            onPress={toggleDarkMode}
           >
             <Text style={styles.darkModeIcon}>{darkMode ? '☀️' : '🌙'}</Text>
           </TouchableOpacity>
