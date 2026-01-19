@@ -1,7 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-//   the machine IP for Expo Go to reach the backend
-const API_URL = 'http://10.100.102.74:3000/api';
+const DEV_BACKEND_PORT = 3000; //Backend api server port
+
+// Determine API URL based on environment
+function getApiUrl() {
+  // For production builds: set EXPO_PUBLIC_API_URL
+  if (!__DEV__) {
+    return process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api';
+  }
+
+  // For development builds: use Expo host
+  const hostUri = Constants.expoConfig?.hostUri ?? Constants.expoConfig?.debuggerHost;
+  const devHost = hostUri?.split(':')?.[0];
+  if (devHost) {
+    return `http://${devHost}:${DEV_BACKEND_PORT}/api`;
+  }
+
+  // Android emulator fallback
+  return `http://10.0.2.2:${DEV_BACKEND_PORT}/api`;
+}
+
+const API_URL = getApiUrl();
 
 // Token management
 export const getToken = async () => {
