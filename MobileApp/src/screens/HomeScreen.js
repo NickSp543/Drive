@@ -634,49 +634,49 @@ const HomeScreen = ({ navigation }) => {
           activeOpacity={1}
           onPress={() => setDrawerVisible(false)}
         >
-          <View style={styles.drawer}>
-            <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>Drive</Text>
+          <View style={[styles.drawer, { backgroundColor: theme.drawerBg }]}>
+            <View style={[styles.drawerHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.drawerTitle, { color: theme.text }]}>Drive</Text>
             </View>
             <TouchableOpacity
-              style={[styles.drawerItem, currentView === 'my-drive' && styles.drawerItemActive]}
+              style={[styles.drawerItem, currentView === 'my-drive' && (darkMode ? styles.drawerItemActiveDark : styles.drawerItemActive)]}
               onPress={() => navigateToView('my-drive')}
             >
               <Text style={styles.drawerItemIcon}>📁</Text>
-              <Text style={styles.drawerItemText}>My Drive</Text>
+              <Text style={[styles.drawerItemText, { color: theme.text }]}>My Drive</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.drawerItem, currentView === 'shared' && styles.drawerItemActive]}
+              style={[styles.drawerItem, currentView === 'shared' && (darkMode ? styles.drawerItemActiveDark : styles.drawerItemActive)]}
               onPress={() => navigateToView('shared')}
             >
               <Text style={styles.drawerItemIcon}>👥</Text>
-              <Text style={styles.drawerItemText}>Shared with me</Text>
+              <Text style={[styles.drawerItemText, { color: theme.text }]}>Shared with me</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.drawerItem, currentView === 'recent' && styles.drawerItemActive]}
+              style={[styles.drawerItem, currentView === 'recent' && (darkMode ? styles.drawerItemActiveDark : styles.drawerItemActive)]}
               onPress={() => navigateToView('recent')}
             >
               <Text style={styles.drawerItemIcon}>🕐</Text>
-              <Text style={styles.drawerItemText}>Recent</Text>
+              <Text style={[styles.drawerItemText, { color: theme.text }]}>Recent</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.drawerItem, currentView === 'starred' && styles.drawerItemActive]}
+              style={[styles.drawerItem, currentView === 'starred' && (darkMode ? styles.drawerItemActiveDark : styles.drawerItemActive)]}
               onPress={() => navigateToView('starred')}
             >
               <Text style={styles.drawerItemIcon}>⭐</Text>
-              <Text style={styles.drawerItemText}>Starred</Text>
+              <Text style={[styles.drawerItemText, { color: theme.text }]}>Starred</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.drawerItem, currentView === 'trash' && styles.drawerItemActive]}
+              style={[styles.drawerItem, currentView === 'trash' && (darkMode ? styles.drawerItemActiveDark : styles.drawerItemActive)]}
               onPress={() => navigateToView('trash')}
             >
               <Text style={styles.drawerItemIcon}>🗑️</Text>
-              <Text style={styles.drawerItemText}>Trash</Text>
+              <Text style={[styles.drawerItemText, { color: theme.text }]}>Trash</Text>
             </TouchableOpacity>
-            <View style={styles.drawerDivider} />
+            <View style={[styles.drawerDivider, { backgroundColor: theme.border }]} />
             <TouchableOpacity style={styles.drawerItem} onPress={handleLogout}>
               <Text style={styles.drawerItemIcon}>🚪</Text>
-              <Text style={styles.drawerItemText}>Logout</Text>
+              <Text style={[styles.drawerItemText, { color: theme.text }]}>Logout</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -1112,6 +1112,9 @@ const styles = StyleSheet.create({
   },
   drawerItemActive: {
     backgroundColor: '#e8f0fe',
+  },
+  drawerItemActiveDark: {
+    backgroundColor: '#3c4043',
   },
   drawerItemIcon: {
     fontSize: 20,

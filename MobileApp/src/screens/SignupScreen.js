@@ -11,6 +11,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  useColorScheme,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,6 +19,9 @@ import { validateRegistrationForm } from '../utils/validation';
 
 const SignupScreen = ({ navigation }) => {
   const { register } = useAuth();
+  const colorScheme = useColorScheme();
+  const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
+
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -33,6 +37,19 @@ const SignupScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Theme colors
+  const theme = {
+    bg: darkMode ? '#1a1a1a' : '#fff',
+    cardBg: darkMode ? '#252525' : '#fff',
+    text: darkMode ? '#e8eaed' : '#202124',
+    textSecondary: darkMode ? '#9aa0a6' : '#5f6368',
+    inputBg: darkMode ? '#303134' : '#fff',
+    inputBorder: darkMode ? '#5f6368' : '#dadce0',
+    placeholder: '#9aa0a6',
+    imagePlaceholderBg: darkMode ? '#3c4043' : '#e8eaed',
+    imagePlaceholderBorder: darkMode ? '#5f6368' : '#dadce0',
+  };
 
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -139,20 +156,28 @@ const SignupScreen = ({ navigation }) => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bg }]}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+          {/* Dark Mode Toggle */}
+          <TouchableOpacity
+            style={styles.darkModeToggle}
+            onPress={() => setDarkMode(!darkMode)}
+          >
+            <Text style={styles.darkModeIcon}>{darkMode ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoIcon}>
               <Text style={styles.logoText}>G</Text>
             </View>
-            <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>Join Drive today</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Create your account</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Join Drive today</Text>
           </View>
 
           {/* Server Error */}
@@ -168,12 +193,12 @@ const SignupScreen = ({ navigation }) => {
               {imagePreview ? (
                 <Image source={{ uri: imagePreview }} style={styles.profileImage} />
               ) : (
-                <View style={styles.imagePlaceholder}>
-                  <Text style={styles.imagePlaceholderText}>+</Text>
+                <View style={[styles.imagePlaceholder, { backgroundColor: theme.imagePlaceholderBg, borderColor: theme.imagePlaceholderBorder }]}>
+                  <Text style={[styles.imagePlaceholderText, { color: theme.textSecondary }]}>+</Text>
                 </View>
               )}
             </TouchableOpacity>
-            <Text style={styles.imageLabel}>Tap to add profile picture</Text>
+            <Text style={[styles.imageLabel, { color: theme.textSecondary }]}>Tap to add profile picture</Text>
             {errors.image ? (
               <Text style={styles.fieldError}>{errors.image}</Text>
             ) : null}
@@ -181,11 +206,11 @@ const SignupScreen = ({ navigation }) => {
 
           {/* Username */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Username *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Username *</Text>
             <TextInput
-              style={[styles.input, errors.username && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.username && styles.inputError]}
               placeholder="At least 3 characters"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.placeholder}
               value={formData.username}
               onChangeText={(value) => handleChange('username', value)}
               autoCapitalize="none"
@@ -199,11 +224,11 @@ const SignupScreen = ({ navigation }) => {
           {/* First Name & Last Name */}
           <View style={styles.row}>
             <View style={[styles.inputContainer, styles.halfInput]}>
-              <Text style={styles.label}>First Name *</Text>
+              <Text style={[styles.label, { color: theme.text }]}>First Name *</Text>
               <TextInput
-                style={[styles.input, errors.firstName && styles.inputError]}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.firstName && styles.inputError]}
                 placeholder="First name"
-                placeholderTextColor="#9aa0a6"
+                placeholderTextColor={theme.placeholder}
                 value={formData.firstName}
                 onChangeText={(value) => handleChange('firstName', value)}
               />
@@ -212,11 +237,11 @@ const SignupScreen = ({ navigation }) => {
               ) : null}
             </View>
             <View style={[styles.inputContainer, styles.halfInput]}>
-              <Text style={styles.label}>Last Name *</Text>
+              <Text style={[styles.label, { color: theme.text }]}>Last Name *</Text>
               <TextInput
-                style={[styles.input, errors.lastName && styles.inputError]}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.lastName && styles.inputError]}
                 placeholder="Last name"
-                placeholderTextColor="#9aa0a6"
+                placeholderTextColor={theme.placeholder}
                 value={formData.lastName}
                 onChangeText={(value) => handleChange('lastName', value)}
               />
@@ -228,11 +253,11 @@ const SignupScreen = ({ navigation }) => {
 
           {/* Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Password *</Text>
             <TextInput
-              style={[styles.input, errors.password && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.password && styles.inputError]}
               placeholder="At least 8 characters"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.placeholder}
               value={formData.password}
               onChangeText={(value) => handleChange('password', value)}
               secureTextEntry
@@ -244,11 +269,11 @@ const SignupScreen = ({ navigation }) => {
 
           {/* Confirm Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Confirm Password *</Text>
             <TextInput
-              style={[styles.input, errors.confirmPassword && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.confirmPassword && styles.inputError]}
               placeholder="Re-enter password"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.placeholder}
               value={formData.confirmPassword}
               onChangeText={(value) => handleChange('confirmPassword', value)}
               secureTextEntry
@@ -260,11 +285,11 @@ const SignupScreen = ({ navigation }) => {
 
           {/* Phone Number */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Phone Number *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Phone Number *</Text>
             <TextInput
-              style={[styles.input, errors.phoneNumber && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.phoneNumber && styles.inputError]}
               placeholder="10 digits (e.g., 0501234567)"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.placeholder}
               value={formData.phoneNumber}
               onChangeText={(value) => handleChange('phoneNumber', value)}
               keyboardType="phone-pad"
@@ -276,13 +301,14 @@ const SignupScreen = ({ navigation }) => {
 
           {/* Gender */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Gender *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Gender *</Text>
             <View style={styles.genderContainer}>
               {genderOptions.map((option) => (
                 <TouchableOpacity
                   key={option}
                   style={[
                     styles.genderButton,
+                    { borderColor: theme.inputBorder },
                     formData.gender === option && styles.genderButtonSelected,
                     errors.gender && styles.genderButtonError,
                   ]}
@@ -291,6 +317,7 @@ const SignupScreen = ({ navigation }) => {
                   <Text
                     style={[
                       styles.genderButtonText,
+                      { color: theme.textSecondary },
                       formData.gender === option && styles.genderButtonTextSelected,
                     ]}
                   >
@@ -306,11 +333,11 @@ const SignupScreen = ({ navigation }) => {
 
           {/* Birth Date */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Birth Date *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Birth Date *</Text>
             <TextInput
-              style={[styles.input, errors.birthDate && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.birthDate && styles.inputError]}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.placeholder}
               value={formData.birthDate}
               onChangeText={(value) => handleChange('birthDate', value)}
             />
@@ -334,7 +361,7 @@ const SignupScreen = ({ navigation }) => {
 
           {/* Login Link */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
+            <Text style={[styles.footerText, { color: theme.textSecondary }]}>Already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
               <Text style={styles.link}>Sign in</Text>
             </TouchableOpacity>
@@ -359,6 +386,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
+  },
+  darkModeToggle: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 1,
+  },
+  darkModeIcon: {
+    fontSize: 24,
   },
   header: {
     alignItems: 'center',

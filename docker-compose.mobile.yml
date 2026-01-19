@@ -1,10 +1,25 @@
 # Docker Compose for Mobile App Development
 # Run with: docker-compose -f docker-compose.mobile.yml up
-# This starts the Express backend only - uses your LOCAL MongoDB.
+# This starts the C++ server and Express backend - uses your LOCAL MongoDB.
 # Make sure MongoDB is running locally on port 27017
 # Run Expo separately on your host machine: cd MobileApp && npx expo start --android
 
 services:
+  # C++ File Storage Server
+  cpp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: drive-cpp-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persist file data on host machine
+      - ./data:/data
+    environment:
+      - DATA_DIR=/data
+
   # Express Backend Server
   backend:
     build:
@@ -19,5 +34,9 @@ services:
       - PORT=3000
       - MONGO_URI=mongodb://host.docker.internal:27017/driveDB
       - JWT_SECRET=your-secret-key-change-in-production
+      - CPP_SERVER_HOST=cpp-server
+      - CPP_SERVER_PORT=8080
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - cpp-server
