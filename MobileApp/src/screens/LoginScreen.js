@@ -11,10 +11,13 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { validateLoginForm } from '../utils/validation';
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useAuth();
+  const { theme, darkMode, toggleDarkMode } = useTheme();
+
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -54,20 +57,28 @@ const LoginScreen = ({ navigation }) => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.bg }]}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+          {/* Dark Mode Toggle */}
+          <TouchableOpacity
+            style={styles.darkModeToggle}
+            onPress={toggleDarkMode}
+          >
+            <Text style={styles.darkModeIcon}>{darkMode ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+
           {/* Logo */}
           <View style={styles.logoContainer}>
             <View style={styles.logoIcon}>
               <Text style={styles.logoText}>G</Text>
             </View>
-            <Text style={styles.title}>Sign in</Text>
-            <Text style={styles.subtitle}>to continue to Drive</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Sign in</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>to continue to Drive</Text>
           </View>
 
           {/* Server Error */}
@@ -79,11 +90,11 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Username Input */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Username</Text>
             <TextInput
-              style={[styles.input, errors.username && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.username && styles.inputError]}
               placeholder="Enter your username"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.placeholder}
               value={formData.username}
               onChangeText={(value) => handleChange('username', value)}
               autoCapitalize="none"
@@ -96,11 +107,11 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Password Input */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Password</Text>
             <TextInput
-              style={[styles.input, errors.password && styles.inputError]}
+              style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }, errors.password && styles.inputError]}
               placeholder="Enter your password"
-              placeholderTextColor="#9aa0a6"
+              placeholderTextColor={theme.placeholder}
               value={formData.password}
               onChangeText={(value) => handleChange('password', value)}
               secureTextEntry
@@ -125,7 +136,7 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Sign Up Link */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Text style={[styles.footerText, { color: theme.textSecondary }]}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
               <Text style={styles.link}>Create account</Text>
             </TouchableOpacity>
@@ -150,6 +161,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
+  },
+  darkModeToggle: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 1,
+  },
+  darkModeIcon: {
+    fontSize: 24,
   },
   logoContainer: {
     alignItems: 'center',
