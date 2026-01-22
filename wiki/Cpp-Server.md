@@ -13,12 +13,12 @@ The C++ server provides:
 ## Architecture
 
 ```
-┌─────────────────┐     TCP (Port 8080)     ┌─────────────────┐
+┌─────────────────┐     TCP (Port 8080)      ┌─────────────────┐
 │  Express API    │ ─────────────────────▶  │   C++ Server    │
 │                 │                          │                 │
 │  fileController │     Commands:            │  - Server.cpp   │
-│  socketService  │     post/get/delete      │  - Compressor   │
-└─────────────────┘                          │  - Commands     │
+│  socketService  │     post/get/delete/     │  - Compressor   │
+└─────────────────┘     search               │  - Commands     │
                                              └────────┬────────┘
                                                       │
                                                       ▼
@@ -136,7 +136,7 @@ Files are stored in the `/data` directory:
 ### Storage Key
 
 Each file is identified by a UUID (storageKey):
-- Generated when file is created
+- Generated when the file is created
 - Stored in MongoDB file metadata
 - Used to reference file in C++ server
 

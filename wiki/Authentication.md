@@ -15,14 +15,14 @@ The Drive App uses JWT (JSON Web Token) authentication:
 
 When you first open the app, you'll see the Login screen.
 
-![Login Screen](images/login-screen.png)
+<img src="images/login-screen.png" alt="Login Screen" width="33%"><br>
 *Screenshot: Initial login screen*
 
 ### Step 2: Navigate to Registration
 
 Tap **"Create account"** at the bottom of the login screen.
 
-![Create Account Link](images/create-account-link.png)
+<img src="images/create-account-link.png" alt="Create Account Link" width="33%"><br>
 *Screenshot: Create account link*
 
 ### Step 3: Fill Registration Form
@@ -41,9 +41,6 @@ Complete all required fields:
 | Gender | Select: Male, Female, or Other |
 | Birth Date | Format: YYYY-MM-DD |
 
-![Registration Form](images/registration-form.png)
-*Screenshot: Registration form fields*
-
 ### Step 4: Add Profile Picture (Optional)
 
 Tap the profile picture placeholder to add a photo:
@@ -51,21 +48,15 @@ Tap the profile picture placeholder to add a photo:
 1. Select **Camera** to take a new photo
 2. Select **Gallery** to choose existing photo
 
-![Profile Picture Options](images/profile-picture-options.png)
-*Screenshot: Profile picture selection options*
-
 ### Step 5: Submit Registration
 
 Tap **"Create account"** button.
-
-![Create Account Button](images/create-account-button.png)
-*Screenshot: Create account button*
 
 ### Step 6: Registration Success
 
 On successful registration, you'll be automatically logged in and redirected to the Home screen.
 
-![Registration Success](images/registration-success.png)
+<img src="images/registration-success.png" alt="Registration Success" width="33%"><br>
 *Screenshot: Successful registration - Home screen*
 
 ## Login Process
@@ -76,22 +67,16 @@ On the login screen, enter:
 - **Username** - Your registered username
 - **Password** - Your password
 
-![Login Form](images/login-form.png)
+<img src="images/login-form.png" alt="Login Form" width="33%"><br>
 *Screenshot: Login form with credentials*
 
 ### Step 2: Tap Sign In
 
 Tap the **"Sign in"** button.
 
-![Sign In Button](images/sign-in-button.png)
-*Screenshot: Sign in button*
-
 ### Step 3: Login Success
 
 On successful login, you'll be redirected to the Home screen showing your files.
-
-![Login Success](images/login-success-home.png)
-*Screenshot: Successful login - Home screen with files*
 
 ## Logout Process
 
@@ -99,26 +84,27 @@ On successful login, you'll be redirected to the Home screen showing your files.
 
 Tap the **hamburger menu** (☰) icon in the top-left corner.
 
-![Menu Icon](images/menu-icon.png)
-*Screenshot: Menu icon location*
-
 ### Step 2: Select Logout
 
 Scroll down in the drawer menu and tap **"Logout"**.
 
-![Logout Option](images/logout-option.png)
+<img src="images/logout-option.png" alt="Logout Option" width="33%"><br>
 *Screenshot: Logout option in menu*
 
 ### Step 3: Confirm Logout
 
 A confirmation dialog will appear. Tap **"Logout"** to confirm.
 
-![Logout Confirmation](images/logout-confirmation.png)
+<img src="images/logout-confirmation.png" alt="Logout Confirmation" width="33%"><br>
 *Screenshot: Logout confirmation dialog*
 
 ### Step 4: Return to Login
 
 You'll be redirected to the Login screen.
+
+### Logout Alternative
+
+Alternatively, you can log out by clicking the user icon in the topleft corner of the screen in the Home screen.
 
 ## Error Handling
 
@@ -131,7 +117,7 @@ You'll be redirected to the Login screen.
 | "Passwords don't match" | Confirm password different | Re-enter matching password |
 | "Invalid phone number" | Wrong format | Use 10 digits |
 
-![Registration Error](images/registration-error.png)
+<img src="images/registration-error.png" alt="Registration Error" width="33%"><br>
 *Screenshot: Registration validation error*
 
 ### Login Errors
@@ -141,7 +127,7 @@ You'll be redirected to the Login screen.
 | "Invalid credentials" | Wrong username/password | Check your credentials |
 | "Network error" | Backend not reachable | Verify backend is running |
 
-![Login Error](images/login-error.png)
+<img src="images/login-error.png" alt="Login Error" width="33%"><br>
 *Screenshot: Login error message*
 
 ## Session Management

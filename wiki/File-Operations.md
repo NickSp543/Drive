@@ -15,13 +15,13 @@ The Drive App supports:
 
 ## Home Screen Layout
 
-![Home Screen Layout](images/home-screen-layout.png)
-*Screenshot: Home screen with labeled components*
+<img src="images/registration-success.png" alt="Home Screen Layout" width="33%"><br>
+*Screenshot: Home screen*
 
 | Component | Description |
 |-----------|-------------|
 | Menu (☰) | Open navigation drawer |
-| Search | Search files by name |
+| Search | Search files by name and content |
 | View Toggle | Switch between list and block view |
 | Dark Mode | Toggle dark/light theme |
 | Files List | Your files and folders |
@@ -33,12 +33,9 @@ The Drive App supports:
 
 Tap the **+** button in the bottom-right corner.
 
-![Create Button](images/create-button.png)
-*Screenshot: Create button location*
-
 ### Create Menu Options
 
-![Create Menu](images/create-menu.png)
+<img src="images/create-menu.png" lt="Create Menu" width="33%"><br>
 *Screenshot: Create menu with options*
 
 ### Creating a Folder
@@ -48,7 +45,7 @@ Tap the **+** button in the bottom-right corner.
 3. Enter folder name
 4. Tap **Create**
 
-![Create Folder](images/create-folder.png)
+<img src="images/create-folder.png" alt="Create Folder" width="33%"><br>
 *Screenshot: Creating a new folder*
 
 ### Creating a Text File
@@ -59,7 +56,7 @@ Tap the **+** button in the bottom-right corner.
 4. Enter file content (optional)
 5. Tap **Create**
 
-![Create File](images/create-file.png)
+<img src="images/create-file.png" alt="Create File" width="33%"><br>
 *Screenshot: Creating a new text file*
 
 ### Uploading from Device Storage
@@ -70,13 +67,10 @@ Tap the **+** button in the bottom-right corner.
 4. Select file
 5. File is uploaded automatically
 
-![Upload from Files](images/upload-from-files.png)
-*Screenshot: Upload from files button*
-
-![File Picker](images/file-picker.png)
+<img src="images/file-picker.png" alt="File Picker" width="33%"><br>
 *Screenshot: Device file picker*
 
-![Upload Success](images/upload-success.png)
+<img src="images/upload-success.png" alt="Upload Success" width="33%"><br>
 *Screenshot: File uploaded successfully*
 
 ## Navigating Folders
@@ -85,7 +79,7 @@ Tap the **+** button in the bottom-right corner.
 
 Tap on any folder to open it and view its contents.
 
-![Open Folder](images/open-folder.png)
+<img src="images/open-folder.png" alt="Open Folder" width="33%"><br>
 *Screenshot: Tapping to open a folder*
 
 ### Folder Contents
@@ -95,36 +89,26 @@ Inside a folder, you'll see:
 - Folder contents
 - Create button for new items
 
-![Inside Folder](images/inside-folder.png)
-*Screenshot: Inside a folder view*
-
 ### Going Back
 
 Tap the **back arrow** or folder path to navigate up.
-
-![Back Navigation](images/back-navigation.png)
-*Screenshot: Back navigation*
 
 ## File Actions
 
 ### Opening Action Menu
 
-**Long press** on any file or folder to open the action menu.
-
-![Long Press](images/long-press-item.png)
-*Screenshot: Long pressing an item*
+Press the **⋮** on any file or folder to open the action menu.
 
 ### Action Menu Options
 
-![Action Menu](images/action-menu.png)
+<img src ="images/action-menu.png" alt="Action Menu" width="33%"><br>
 *Screenshot: Action menu with all options*
 
 | Action | Description |
 |--------|-------------|
-| Open | View file contents |
-| Edit | Modify file content |
+| Edit | Modify file content (for files only)|
 | Rename | Change item name |
-| Move | Move to another folder |
+| Move to folder| Move to another folder |
 | Star/Unstar | Mark as important |
 | Share | Share with other users |
 | Delete | Move to trash |
@@ -133,7 +117,7 @@ Tap the **back arrow** or folder path to navigate up.
 
 ### Step 1: Open Edit Mode
 
-Long press file → Select **Edit**
+**⋮** → Select **Edit**
 
 ![Edit Option](images/edit-option.png)
 *Screenshot: Edit option in menu*
@@ -156,34 +140,31 @@ Tap **Save** to save your changes.
 
 ### Step 1: Open Rename Dialog
 
-Long press item → Select **Rename**
-
-![Rename Option](images/rename-option.png)
-*Screenshot: Rename option*
+**⋮** → Select **Rename**
 
 ### Step 2: Enter New Name
 
 Type the new name and tap **Rename**.
 
-![Rename Dialog](images/rename-dialog.png)
+<img src="images/rename-dialog.png" alt="Rename Dialog" width="33%"><br>
 *Screenshot: Rename dialog*
 
 ### Step 3: Item Renamed
 
 The item now shows with its new name.
 
-![Renamed Item](images/renamed-item.png)
+<img src="images/renamed-item.png" alt="Renamed Item" width="33%"><br>
 *Screenshot: Item with new name*
 
 ## Moving Items
 
 ### Method 1: Using Move Option
 
-1. Long press item → Select **Move**
+1. **⋮** → Select **Move**
 2. Select destination folder
 3. Item is moved
 
-![Move Dialog](images/move-dialog.png)
+<img src="images/move-dialog.png" alt="Move Dialog" width="33%"><br>
 *Screenshot: Move destination selection*
 
 ### Method 2: Drag and Drop
@@ -192,19 +173,15 @@ The item now shows with its new name.
 2. Tap on a **folder** to drop the item into it
 3. Confirm the move
 
-![Drag Mode](images/drag-mode-selected.png)
-*Screenshot: Item selected for moving*
-
-![Drop Target](images/drop-target-folder.png)
-*Screenshot: Folder highlighted as drop target*
+<img src="images/drag-mode-selected.png" alt="Item selected for moving" width="33%"><br>
 
 ## Starring Items
 
 ### Star an Item
 
-Long press item → Select **Star**
+**⋮** → Select **Star**
 
-![Star Option](images/star-option.png)
+<img src="images/star-option.png" alt="Star Option" width="33%"><br>
 *Screenshot: Star option*
 
 ### Viewing Starred Items
@@ -212,19 +189,19 @@ Long press item → Select **Star**
 1. Open menu (☰)
 2. Select **Starred**
 
-![Starred View](images/starred-view.png)
+<img src="images/starred-view.png" alt="Starred View" width="33%"><br>
 *Screenshot: Starred items view*
 
 ## Deleting Items
 
 ### Move to Trash
 
-Long press item → Select **Delete**
+**⋮** → Select **Delete**
 
-![Delete Option](images/delete-option.png)
+<img src="images/delete-option.png" alt="Delete Option" width="33%"><br>
 *Screenshot: Delete option*
 
-![Delete Confirmation](images/delete-confirmation.png)
+<img src="images/delete-confirmation.png" alt="Delete Confirmation" width="33%"><br>
 *Screenshot: Delete confirmation dialog*
 
 ### Viewing Trash
@@ -232,14 +209,16 @@ Long press item → Select **Delete**
 1. Open menu (☰)
 2. Select **Trash**
 
-![Trash View](images/trash-view.png)
+<img src="images/trash-view.png" alt="Trash View" width="33%"><br>
 *Screenshot: Trash view with deleted items*
 
-### Permanent Delete
+### Permanent Delete or Restore
 
-In Trash view, long press item → Select **Delete permanently**
+In Trash view, **⋮** → Select **Delete** to permenantly delete the file.
 
-![Permanent Delete](images/permanent-delete.png)
+Or, **⋮** → Select **Restore** to restore the file from Trash.
+
+<img src="images/permanent-delete.png" alt="Permanent Delete" width="33%"><br>
 *Screenshot: Permanent delete option*
 
 ## View Options
@@ -249,11 +228,13 @@ In Trash view, long press item → Select **Delete permanently**
 Toggle between views using the view button in the header.
 
 **List View:**
-![List View](images/list-view.png)
+
+<img src="images/list-view.png" alt="List View" width="33%"><br>
 *Screenshot: List view*
 
 **Block View:**
-![Block View](images/block-view.png)
+
+<img src="images/block-view.png" alt="Block View" width="33%"><br>
 *Screenshot: Block/grid view*
 
 ### Dark Mode
@@ -261,11 +242,13 @@ Toggle between views using the view button in the header.
 Toggle dark mode using the sun/moon button in the header.
 
 **Light Mode:**
-![Light Mode](images/light-mode.png)
+
+<img src="images/list-view.png" alt="Light mode" width="33%"><br>
 *Screenshot: Light mode*
 
 **Dark Mode:**
-![Dark Mode](images/dark-mode.png)
+
+<img src="images/dark-mode.png" alt="Dark mode" width="33%"><br>
 *Screenshot: Dark mode*
 
 ## Search
@@ -276,13 +259,8 @@ Toggle dark mode using the sun/moon button in the header.
 2. Enter search query
 3. Results appear below
 
-![Search](images/search-files.png)
+<img src="images/search-files.png" alt="Search functionality" width="33%"><br>
 *Screenshot: Search functionality*
-
-### Search Results
-
-![Search Results](images/search-results.png)
-*Screenshot: Search results*
 
 ## Navigation Menu Views
 
@@ -296,7 +274,7 @@ Access different views from the navigation drawer:
 | Shared with me | Files shared by others |
 | Trash | Deleted items |
 
-![Navigation Drawer](images/navigation-drawer.png)
+<img src="images/navigation-drawer.png" alt="Navigation drawer" width="33%"><br>
 *Screenshot: Navigation drawer with all views*
 
 ---

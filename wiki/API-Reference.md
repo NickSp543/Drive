@@ -398,10 +398,6 @@ Authorization: Bearer <token>
 
 ---
 
-## Rate Limiting
-
-Currently no rate limiting is implemented.
-
 ## CORS
 
 The API allows cross-origin requests from any origin in development mode.

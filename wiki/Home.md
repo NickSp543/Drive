@@ -14,10 +14,10 @@ The Drive App is a Google Drive-like file management system consisting of:
 ## Architecture
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+┌─────────────────┐     ┌─────────────────┐      ┌─────────────────┐
 │   Mobile App    │────▶│  Express API    │────▶│    MongoDB      │
-│  (React Native) │     │   (Port 3000)   │     │  (Port 27017)   │
-└─────────────────┘     └────────┬────────┘     └─────────────────┘
+│  (React Native) │     │   (Port 3000)   │      │  (Port 27017)   │
+└─────────────────┘     └────────┬────────┘      └─────────────────┘
                                  │
                                  ▼
                         ┌─────────────────┐
@@ -71,19 +71,3 @@ npx expo start --android
 ```
 
 For detailed instructions, see [Running the System](Running-the-System.md).
-
----
-
-## Screenshots
-
-### Login Screen
-![Login Screen](images/login-screen.png)
-*Screenshot: Login screen with dark mode toggle*
-
-### Home Screen
-![Home Screen](images/home-screen.png)
-*Screenshot: Main file browser interface*
-
-### Dark Mode
-![Dark Mode](images/dark-mode-home.png)
-*Screenshot: App in dark mode*

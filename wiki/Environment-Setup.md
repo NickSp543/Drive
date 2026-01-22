@@ -46,17 +46,6 @@ npm install
 cd ..
 ```
 
-### 4. Create Data Directory
-
-Create the directory where C++ server will store files:
-
-```bash
-mkdir data
-```
-
-![Data Directory](images/create-data-directory.png)
-*Screenshot: Creating data directory*
-
 ### 5. Configure Android Emulator
 
 1. Open Android Studio
@@ -66,24 +55,6 @@ mkdir data
 
 ![Android Studio Device Manager](images/android-studio-device-manager.png)
 *Screenshot: Android Studio Device Manager*
-
-### 6. Configure Network Settings
-
-The mobile app needs to connect to the backend server. Update the API URL in:
-
-**File:** `MobileApp/src/utils/api.js`
-
-```javascript
-// Change this IP to your machine's local IP address
-const API_URL = 'http://YOUR_IP_ADDRESS:3000/api';
-```
-
-To find your IP address:
-- **Windows:** Run `ipconfig` in Command Prompt
-- **Mac/Linux:** Run `ifconfig` or `ip addr`
-
-![Network Configuration](images/network-config.png)
-*Screenshot: Finding your IP address*
 
 ## Verify Installation
 
@@ -125,9 +96,12 @@ netstat -ano | findstr :27017
 
 ### Check Android Emulator
 
+If you have Android SDK Platform-Tools in PATH:
 ```bash
 adb devices
 ```
+
+Otherwise you need to specifically target adb.exe.
 
 Expected output:
 ```

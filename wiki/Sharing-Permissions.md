@@ -16,17 +16,14 @@ The Drive App supports sharing files and folders with different permission level
 
 ### Step 1: Open Action Menu
 
-Long press on the file or folder you want to share.
+Press **⋮** on the file or folder you want to share.
 
-![Long Press to Share](images/share-long-press.png)
-*Screenshot: Long pressing item to share*
+<img src="images/share-long-press.png" alt="Long Press to Share" width="33%"><br>
+*Screenshot: Pressing item to share*
 
 ### Step 2: Select Share
 
 Tap **Share** from the action menu.
-
-![Share Option](images/share-option-menu.png)
-*Screenshot: Share option in action menu*
 
 ### Step 3: Share Screen
 
@@ -35,7 +32,7 @@ The Share screen opens showing:
 - Add people section
 - Current permissions list
 
-![Share Screen](images/share-screen.png)
+<img src="images/share-screen.png" alt="Share Screen" width="33%"><br>
 *Screenshot: Share screen layout*
 
 ## Adding Users
@@ -44,30 +41,24 @@ The Share screen opens showing:
 
 Type the username of the person you want to share with.
 
-![Enter Username](images/share-enter-username.png)
-*Screenshot: Entering username to share with*
-
 ### Step 2: Select Permission Level
 
 Choose the permission level:
 - **Reader** - Can only view
 - **Writer** - Can view and edit
 
-![Select Role](images/share-select-role.png)
-*Screenshot: Selecting permission role*
-
 ### Step 3: Add User
 
 Tap the **Add** button.
 
-![Add Button](images/share-add-button.png)
+<img src="images/share-user-added.png" alt="Confirmation" width="33%"><br>
 *Screenshot: Add button*
 
 ### Step 4: User Added
 
 The user now appears in the permissions list.
 
-![User Added](images/share-user-added.png)
+<img src="images/share-user-added-list.png" alt="User Added" width="33%"><br>
 *Screenshot: User added to permissions*
 
 ## Managing Permissions
@@ -76,7 +67,7 @@ The user now appears in the permissions list.
 
 The "People with access" section shows all users with access.
 
-![People with Access](images/people-with-access.png)
+<img src="images/share-user-added-list.png" alt="User Added" width="33%"><br>
 *Screenshot: List of people with access*
 
 ### Changing Permission Level
@@ -84,10 +75,10 @@ The "People with access" section shows all users with access.
 1. Tap on the role dropdown next to a user
 2. Select new role (Reader/Writer)
 
-![Change Role](images/change-role-dropdown.png)
+<img src="images/change-role-dropdown.png" alt="Change Role" width="33%"><br>
 *Screenshot: Role change dropdown*
 
-![Role Changed](images/role-changed.png)
+<img src="images/role-changed.png" alt="Role Changed" width="33%"><br>
 *Screenshot: Role successfully changed*
 
 ### Removing Access
@@ -95,10 +86,7 @@ The "People with access" section shows all users with access.
 1. Tap the **X** button next to a user
 2. Confirm removal
 
-![Remove Access Button](images/remove-access-button.png)
-*Screenshot: Remove access button*
-
-![Remove Confirmation](images/remove-access-confirmation.png)
+<img src="images/remove-access-confirmation.png" alt="Remove Confirmation" width="33%"><br>
 *Screenshot: Remove access confirmation*
 
 ## Accessing Shared Files
@@ -107,21 +95,18 @@ The "People with access" section shows all users with access.
 
 Tap the menu icon (☰) to open the navigation drawer.
 
-![Open Menu](images/open-menu-drawer.png)
-*Screenshot: Opening menu*
-
 ### Step 2: Select "Shared with me"
 
 Tap **Shared with me** from the menu options.
 
-![Shared with Me Option](images/shared-with-me-option.png)
+<img src="images/shared-with-me-option.png" alt="Shared With Me Option" width="33%"><br>
 *Screenshot: Shared with me option*
 
 ### Step 3: View Shared Files
 
 See all files that others have shared with you.
 
-![Shared Files List](images/shared-files-list.png)
+<img src="images/shared-files-list.png" alt="Shared Files" width="33%"><br>
 *Screenshot: List of shared files*
 
 ## Permission Inheritance
@@ -130,9 +115,6 @@ When you share a **folder**, the permissions apply to:
 - The folder itself
 - All files inside the folder
 - All subfolders and their contents
-
-![Folder Sharing](images/folder-sharing-inheritance.png)
-*Screenshot: Folder sharing with contents*
 
 ## Permission Levels Explained
 
@@ -157,7 +139,7 @@ When you share a **folder**, the permissions apply to:
 
 ## Share Screen Components
 
-![Share Screen Components](images/share-screen-components.png)
+<img src="images/share-user-added-list.png" alt="Share Screen Components" width="33%"><br>
 *Screenshot: Share screen with labeled components*
 
 | Component | Description |
@@ -177,7 +159,7 @@ When you share a **folder**, the permissions apply to:
 
 If the username doesn't exist:
 
-![User Not Found](images/share-user-not-found.png)
+<img src="images/share-user-not-found.png" alt="User Not Found" width="33%"><br>
 *Screenshot: User not found error*
 
 **Solution:** Verify the username is correct and the user is registered.
@@ -186,7 +168,7 @@ If the username doesn't exist:
 
 If the user already has permission:
 
-![Already Has Access](images/share-already-has-access.png)
+<img src="images/share-already-has-access.png" alt="Already Has Access" width="33%"><br>
 *Screenshot: User already has access error*
 
 **Solution:** Modify their existing permission instead.
@@ -236,13 +218,6 @@ Content-Type: application/json
 DELETE /api/files/:fileId/permissions/:permissionId
 Authorization: Bearer <token>
 ```
-
-## Best Practices
-
-1. **Share folders, not individual files** - Easier to manage
-2. **Use Reader role by default** - Only give Writer when needed
-3. **Regularly review permissions** - Remove access when no longer needed
-4. **Organize shared content** - Use clear folder names
 
 ---
 
