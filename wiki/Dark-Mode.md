@@ -67,9 +67,6 @@ const MyScreen = () => {
 
 Tap the sun/moon icon in the header to toggle dark mode.
 
-![Dark Mode Toggle Button](images/dark-mode-toggle-button.png)
-*Screenshot: Dark mode toggle button location*
-
 ### Toggle Icon
 
 | Mode | Icon |
@@ -107,71 +104,15 @@ Tap the sun/moon icon in the header to toggle dark mode.
 | modalBg | `#303134` | Modal background |
 | drawerBg | `#252525` | Drawer background |
 
-## Screens with Dark Mode
-
-### Login Screen
-
-![Login Screen Light](images/login-light.png)
-*Screenshot: Login screen in light mode*
-
-![Login Screen Dark](images/login-dark.png)
-*Screenshot: Login screen in dark mode*
-
-### Signup Screen
-
-![Signup Screen Light](images/signup-light.png)
-*Screenshot: Signup screen in light mode*
-
-![Signup Screen Dark](images/signup-dark.png)
-*Screenshot: Signup screen in dark mode*
+## Examples with Dark Mode
 
 ### Home Screen
 
-![Home Screen Light](images/home-light.png)
+<img src="images/list-view.png" alt="Home Screen Light" width="33%"><br>
 *Screenshot: Home screen in light mode*
 
-![Home Screen Dark](images/home-dark.png)
+<img src="images/dark-mode.png" alt="Home Screen Dark" width="33%"><br>
 *Screenshot: Home screen in dark mode*
-
-### Navigation Drawer
-
-![Drawer Light](images/drawer-light.png)
-*Screenshot: Navigation drawer in light mode*
-
-![Drawer Dark](images/drawer-dark.png)
-*Screenshot: Navigation drawer in dark mode*
-
-### Modals
-
-All modals support dark mode:
-
-#### Create Modal
-![Create Modal Dark](images/create-modal-dark.png)
-*Screenshot: Create file/folder modal in dark mode*
-
-#### Action Modal (3-dots menu)
-![Action Modal Dark](images/action-modal-dark.png)
-*Screenshot: Action modal in dark mode*
-
-#### Rename Modal
-![Rename Modal Dark](images/rename-modal-dark.png)
-*Screenshot: Rename modal in dark mode*
-
-#### Edit Modal
-![Edit Modal Dark](images/edit-modal-dark.png)
-*Screenshot: Edit file modal in dark mode*
-
-#### Move Modal
-![Move Modal Dark](images/move-modal-dark.png)
-*Screenshot: Move to folder modal in dark mode*
-
-### Share Screen
-
-![Share Screen Light](images/share-light.png)
-*Screenshot: Share screen in light mode*
-
-![Share Screen Dark](images/share-dark.png)
-*Screenshot: Share screen in dark mode*
 
 ## State Persistence
 
@@ -188,44 +129,6 @@ import { useColorScheme } from 'react-native';
 
 const colorScheme = useColorScheme();
 const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
-```
-
-## Best Practices
-
-1. **Always use theme colors** - Never hardcode colors in components
-2. **Test both modes** - Verify UI looks good in both light and dark mode
-3. **Contrast ratios** - Ensure text is readable against backgrounds
-4. **Consistent toggling** - Toggle button available on all screens
-
-## Adding Dark Mode to New Components
-
-When creating new components:
-
-```javascript
-import { useTheme } from '../contexts/ThemeContext';
-
-const NewComponent = () => {
-  const { theme, darkMode } = useTheme();
-
-  return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <Text style={[styles.title, { color: theme.text }]}>
-        Title
-      </Text>
-      <TextInput
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.inputBg,
-            borderColor: theme.inputBorder,
-            color: theme.text
-          }
-        ]}
-        placeholderTextColor={theme.textSecondary}
-      />
-    </View>
-  );
-};
 ```
 
 ---
