@@ -15,8 +15,7 @@ function sendToCppEngine(command) {
         client.setTimeout(5000); // 5 second timeout
 
         client.connect(CPP_SERVER_PORT, CPP_SERVER_HOST, () => {
-            console.log(`Connected to C++ server, sending: ${command}`);
-            client.write(command + '\n'); 
+            client.write(command + '\n');
         });
 
         let responseData = '';
@@ -40,7 +39,7 @@ function sendToCppEngine(command) {
         });
 
         client.on('close', () => {
-            console.log('Connection to C++ server closed');
+            // Connection closed
         });
     });
 }

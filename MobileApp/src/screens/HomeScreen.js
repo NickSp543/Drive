@@ -16,6 +16,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { useFiles } from '../contexts/FileContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { apiFetch } from '../utils/api';
 
 const HomeScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
@@ -28,6 +29,7 @@ const HomeScreen = ({ navigation }) => {
     setCurrentView,
     fetchFiles,
     createFile,
+    getFile,
     updateFile,
     deleteFile,
     toggleStar,
@@ -52,6 +54,9 @@ const HomeScreen = ({ navigation }) => {
   const [editContent, setEditContent] = useState('');
   const [moveModalVisible, setMoveModalVisible] = useState(false);
   const [availableFolders, setAvailableFolders] = useState([]);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [viewContent, setViewContent] = useState('');
+  const [loadingContent, setLoadingContent] = useState(false);
 
   // Drag mode state - item selected for moving
   const [dragItem, setDragItem] = useState(null);
@@ -278,10 +283,35 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const handleEdit = () => {
+  const handleView = async () => {
     setActionModalVisible(false);
-    setEditContent(selectedItem.data || '');
+    setLoadingContent(true);
+    setViewContent('');
+    setViewModalVisible(true);
+    try {
+      const fileData = await getFile(selectedItem.id || selectedItem._id);
+      setViewContent(fileData.data || '(Empty file)');
+    } catch (error) {
+      setViewContent('Failed to load file content');
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  const handleEdit = async () => {
+    setActionModalVisible(false);
+    setLoadingContent(true);
+    setEditContent('');
     setEditModalVisible(true);
+    try {
+      const fileData = await getFile(selectedItem.id || selectedItem._id);
+      setEditContent(fileData.data || '');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load file content');
+      setEditModalVisible(false);
+    } finally {
+      setLoadingContent(false);
+    }
   };
 
   const submitEdit = async () => {
@@ -302,8 +332,11 @@ const HomeScreen = ({ navigation }) => {
   const handleMove = async () => {
     setActionModalVisible(false);
     try {
-      const allFiles = await fetchFiles(null, { view: 'my-drive', folders: 'true' });
-      const folders = (allFiles || files).filter(
+      // Fetch folders separately without affecting main files state
+      const response = await apiFetch('/files?view=my-drive&folders=true');
+      if (!response.ok) throw new Error('Failed to fetch folders');
+      const allFolders = await response.json();
+      const folders = allFolders.filter(
         f => f.isFolder && (f.id || f._id) !== (selectedItem?.id || selectedItem?._id)
       );
       setAvailableFolders(folders);
@@ -766,41 +799,76 @@ const HomeScreen = ({ navigation }) => {
           onPress={() => setActionModalVisible(false)}
         >
           <View style={[styles.actionModalContent, { backgroundColor: theme.modalBg }]}>
-            <Text style={[styles.actionModalTitle, { color: theme.text, borderBottomColor: theme.border }]}>{selectedItem?.name}</Text>
-            {!selectedItem?.isFolder && (
-              <TouchableOpacity style={styles.actionItem} onPress={handleEdit}>
-                <Text style={styles.actionItemIcon}>✏️</Text>
-                <Text style={[styles.actionItemText, { color: theme.text }]}>Edit</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={styles.actionItem} onPress={handleRename}>
-              <Text style={styles.actionItemIcon}>📝</Text>
-              <Text style={[styles.actionItemText, { color: theme.text }]}>Rename</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionItem} onPress={handleToggleStar}>
-              <Text style={styles.actionItemIcon}>{selectedItem?.isStarred ? '⭐' : '☆'}</Text>
-              <Text style={[styles.actionItemText, { color: theme.text }]}>
-                {selectedItem?.isStarred ? 'Remove star' : 'Add star'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionItem} onPress={handleShare}>
-              <Text style={styles.actionItemIcon}>👥</Text>
-              <Text style={[styles.actionItemText, { color: theme.text }]}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionItem} onPress={handleMove}>
-              <Text style={styles.actionItemIcon}>📂</Text>
-              <Text style={[styles.actionItemText, { color: theme.text }]}>Move to folder</Text>
-            </TouchableOpacity>
-            {currentView === 'trash' && (
-              <TouchableOpacity style={styles.actionItem} onPress={handleRestore}>
-                <Text style={styles.actionItemIcon}>♻️</Text>
-                <Text style={[styles.actionItemText, { color: theme.text }]}>Restore</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={[styles.actionItem, styles.deleteAction, { borderTopColor: theme.border }]} onPress={handleDelete}>
-              <Text style={styles.actionItemIcon}>🗑️</Text>
-              <Text style={[styles.actionItemText, styles.deleteText]}>Delete</Text>
-            </TouchableOpacity>
+            {(() => {
+              // Determine user's role for this item
+              const itemUserId = selectedItem?.userId?.toString() || selectedItem?.userId;
+              const currentUserId = user?.id?.toString() || user?._id?.toString();
+              const isOwner = itemUserId === currentUserId;
+              const isWriter = selectedItem?.userRole === 'writer';
+              const canWrite = isOwner || isWriter;
+
+              return (
+                <>
+                  <Text style={[styles.actionModalTitle, { color: theme.text, borderBottomColor: theme.border }]}>{selectedItem?.name}</Text>
+                  {/* View - available to all roles */}
+                  {!selectedItem?.isFolder && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleView}>
+                      <Text style={styles.actionItemIcon}>📖</Text>
+                      <Text style={[styles.actionItemText, { color: theme.text }]}>View</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Edit - only for owner and writer */}
+                  {!selectedItem?.isFolder && canWrite && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleEdit}>
+                      <Text style={styles.actionItemIcon}>✏️</Text>
+                      <Text style={[styles.actionItemText, { color: theme.text }]}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Rename - only for owner and writer */}
+                  {canWrite && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleRename}>
+                      <Text style={styles.actionItemIcon}>📝</Text>
+                      <Text style={[styles.actionItemText, { color: theme.text }]}>Rename</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Star - available to all roles */}
+                  <TouchableOpacity style={styles.actionItem} onPress={handleToggleStar}>
+                    <Text style={styles.actionItemIcon}>{selectedItem?.isStarred ? '⭐' : '☆'}</Text>
+                    <Text style={[styles.actionItemText, { color: theme.text }]}>
+                      {selectedItem?.isStarred ? 'Remove star' : 'Add star'}
+                    </Text>
+                  </TouchableOpacity>
+                  {/* Share - only for owner */}
+                  {isOwner && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleShare}>
+                      <Text style={styles.actionItemIcon}>👥</Text>
+                      <Text style={[styles.actionItemText, { color: theme.text }]}>Share</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Move - only for owner and writer */}
+                  {canWrite && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleMove}>
+                      <Text style={styles.actionItemIcon}>📂</Text>
+                      <Text style={[styles.actionItemText, { color: theme.text }]}>Move to folder</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Restore - only in trash view */}
+                  {currentView === 'trash' && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleRestore}>
+                      <Text style={styles.actionItemIcon}>♻️</Text>
+                      <Text style={[styles.actionItemText, { color: theme.text }]}>Restore</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Delete - only for owner */}
+                  {isOwner && (
+                    <TouchableOpacity style={[styles.actionItem, styles.deleteAction, { borderTopColor: theme.border }]} onPress={handleDelete}>
+                      <Text style={styles.actionItemIcon}>🗑️</Text>
+                      <Text style={[styles.actionItemText, styles.deleteText]}>Delete</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -837,6 +905,36 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </Modal>
 
+      {/* View Modal */}
+      <Modal
+        visible={viewModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setViewModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.viewModalContent, { backgroundColor: theme.modalBg }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>{selectedItem?.name}</Text>
+            {loadingContent ? (
+              <View style={styles.loadingContentContainer}>
+                <ActivityIndicator size="large" color="#1a73e8" />
+                <Text style={[styles.loadingContentText, { color: theme.textSecondary }]}>Loading content...</Text>
+              </View>
+            ) : (
+              <View style={[styles.viewContentContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+                <Text style={[styles.viewContentText, { color: theme.text }]}>{viewContent}</Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={styles.modalCreateButton}
+              onPress={() => setViewModalVisible(false)}
+            >
+              <Text style={styles.modalCreateText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Edit Modal */}
       <Modal
         visible={editModalVisible}
@@ -847,14 +945,21 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.editModalContent, { backgroundColor: theme.modalBg }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>Edit File</Text>
-            <TextInput
-              style={[styles.modalInput, styles.editInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
-              placeholder="File content"
-              placeholderTextColor={theme.textSecondary}
-              value={editContent}
-              onChangeText={setEditContent}
-              multiline
-            />
+            {loadingContent ? (
+              <View style={styles.loadingContentContainer}>
+                <ActivityIndicator size="large" color="#1a73e8" />
+                <Text style={[styles.loadingContentText, { color: theme.textSecondary }]}>Loading content...</Text>
+              </View>
+            ) : (
+              <TextInput
+                style={[styles.modalInput, styles.editInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                placeholder="File content"
+                placeholderTextColor={theme.textSecondary}
+                value={editContent}
+                onChangeText={setEditContent}
+                multiline
+              />
+            )}
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
@@ -862,7 +967,11 @@ const HomeScreen = ({ navigation }) => {
               >
                 <Text style={[styles.modalCancelText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalCreateButton} onPress={submitEdit}>
+              <TouchableOpacity
+                style={[styles.modalCreateButton, loadingContent && styles.buttonDisabled]}
+                onPress={submitEdit}
+                disabled={loadingContent}
+              >
                 <Text style={styles.modalCreateText}>Save</Text>
               </TouchableOpacity>
             </View>
@@ -1136,6 +1245,32 @@ const styles = StyleSheet.create({
   },
   editModalContent: {
     maxHeight: '80%',
+  },
+  viewModalContent: {
+    maxHeight: '80%',
+  },
+  loadingContentContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingContentText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
+  viewContentContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    minHeight: 150,
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+  viewContentText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   modalTitle: {
     fontSize: 20,

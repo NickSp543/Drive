@@ -34,25 +34,59 @@ function parseResponse(response) {
     return { status, content };
 }
 
-// Internal Helper: Check permissions locally
+// Helper: Add isStarred and userRole computed fields for a user
+async function addComputedFields(files, userId) {
+    const userIdStr = userId.toString();
+    const results = [];
+    for (const file of files) {
+        const fileObj = file.toObject ? file.toObject() : file;
+        fileObj.isStarred = (fileObj.starredBy || []).some(id => id.toString() === userIdStr);
+
+        // Compute user's role for this file
+        const fileOwnerId = fileObj.userId ? fileObj.userId.toString() : '';
+        if (fileOwnerId === userIdStr) {
+            fileObj.userRole = 'owner';
+        } else {
+            // Check for permission (will inherit from parent via checkRoleLocal)
+            // Get the file ID, ensuring it's a valid ObjectId
+            const fileId = fileObj._id || fileObj.id;
+            const role = await checkRoleLocal(fileId, userId);
+            fileObj.userRole = role || 'reader'; // Default to reader if has access but role unknown
+        }
+        results.push(fileObj);
+    }
+    return results;
+}
+
+// Internal Helper: Check permissions locally (matches working part4 logic)
 async function checkRoleLocal(fileId, userId, depth = 0) {
     if (!fileId || !userId) return null;
     if (depth > 10) return null;
 
     try {
-        const file = await File.findById(fileId);
+        // Convert to strings for reliable comparison
+        const fileIdStr = fileId.toString();
+        const userIdStr = userId.toString();
+
+        const file = await File.findById(fileIdStr);
         if (!file) return null;
 
+        // Check ownership first
         const ownerId = file.userId ? file.userId.toString() : "";
-        const currentUserId = userId.toString();
+        if (ownerId === userIdStr) return 'owner';
 
-        if (ownerId === currentUserId) return 'owner';
+        // Get ALL permissions and filter by BOTH fileId AND userId using string comparison
+        // This is the most reliable approach to avoid any ObjectId matching issues
+        const allPerms = await Permission.find({});
+        const matchingPerm = allPerms.find(p =>
+            p.fileId.toString() === fileIdStr &&
+            p.userId.toString() === userIdStr
+        );
+        if (matchingPerm) return matchingPerm.role;
 
-        const perm = await Permission.findOne({ fileId, userId });
-        if (perm) return perm.role;
-
+        // Check parent folder permissions (inheritance)
         if (file.parentId) {
-            return checkRoleLocal(file.parentId, userId, depth + 1);
+            return checkRoleLocal(file.parentId.toString(), userIdStr, depth + 1);
         }
     } catch (err) {
         console.error("Role check error:", err);
@@ -68,35 +102,112 @@ exports.getFiles = async (req, res) => {
 
     try {
         const { parentId, folders, files, view } = req.query;
-        let query = {};
 
         if (view === 'starred') {
-            query = { userId, isStarred: true, isTrashed: false };
+            // Find files starred by this user - use string comparison
+            const userIdStr = userId.toString();
+            const starredFiles = await File.find({ isTrashed: false });
+            const filtered = starredFiles.filter(f =>
+                (f.starredBy || []).some(id => id.toString() === userIdStr)
+            );
+            const itemsWithFields = await addComputedFields(filtered, userId);
+            return res.status(200).json(itemsWithFields);
         } else if (view === 'trash') {
-            query = { userId, isTrashed: true };
+            // Show trashed files owned by user - use string comparison
+            const userIdStr = userId.toString();
+            const trashedFiles = await File.find({ isTrashed: true });
+            const filtered = trashedFiles.filter(f => f.userId.toString() === userIdStr);
+            const itemsWithFields = await addComputedFields(filtered, userId);
+            return res.status(200).json(itemsWithFields);
         } else if (view === 'recent') {
+            // Show recently created files owned by user
+            const userIdStr = userId.toString();
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            query = { userId, isTrashed: false, createdAt: { $gte: sevenDaysAgo } };
+            const recentFiles = await File.find({ isTrashed: false, createdAt: { $gte: sevenDaysAgo } });
+            const filtered = recentFiles.filter(f => f.userId.toString() === userIdStr);
+            filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const itemsWithFields = await addComputedFields(filtered, userId);
+            return res.status(200).json(itemsWithFields);
         } else if (view === 'shared') {
-            const perms = await Permission.find({ userId });
-            const fileIds = perms.map(p => p.fileId);
-            query = { _id: { $in: fileIds }, isTrashed: false, userId: { $ne: userId } };
+            // Find all permissions for this user - use string comparison for reliability
+            const allPerms = await Permission.find({});
+            const userIdStr = userId.toString();
+            const userPerms = allPerms.filter(p => p.userId.toString() === userIdStr);
+            const fileIds = userPerms.map(p => p.fileId);
+
+            // Get files where user has permission and is NOT the owner
+            const sharedFiles = await File.find({ _id: { $in: fileIds }, isTrashed: false });
+            // Filter out files owned by current user
+            const filteredFiles = sharedFiles.filter(f => f.userId.toString() !== userIdStr);
+            const itemsWithFields = await addComputedFields(filteredFiles, userId);
+            return res.status(200).json(itemsWithFields);
         } else {
-            query = { userId, isTrashed: false };
+            // Check if navigating into a folder
             if (parentId && parentId !== 'null') {
                 if (!isValidId(parentId)) return res.status(400).json({ error: "Invalid parentId" });
-                query.parentId = parentId;
+
+                // Convert parentId to string for comparison
+                const parentIdStr = parentId.toString();
+
+                // Check if user has access to the parent folder
+                const parentRole = await checkRoleLocal(parentIdStr, userId);
+
+                if (parentRole) {
+                    // Get ALL files and filter by parentId string comparison
+                    // This avoids any ObjectId matching issues
+                    const allFiles = await File.find({ isTrashed: false });
+
+                    // Filter files whose parentId matches (using string comparison)
+                    let childFiles = allFiles.filter(f => {
+                        if (!f.parentId) return false;
+                        return f.parentId.toString() === parentIdStr;
+                    });
+
+                    // Apply folder/file filter
+                    if (folders === 'true') {
+                        childFiles = childFiles.filter(f => f.isFolder);
+                    } else if (files === 'true') {
+                        childFiles = childFiles.filter(f => !f.isFolder);
+                    }
+
+                    // Sort: folders first, then by date
+                    childFiles.sort((a, b) => {
+                        if (a.isFolder && !b.isFolder) return -1;
+                        if (!a.isFolder && b.isFolder) return 1;
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                    });
+
+                    const itemsWithFields = await addComputedFields(childFiles, userId);
+                    return res.status(200).json(itemsWithFields);
+                } else {
+                    return res.status(403).json({ error: "Access denied to folder" });
+                }
             } else {
-                query.parentId = null;
+                // Root level - show only user's own files
+                const userIdStr = userId.toString();
+                const userFiles = await File.find({ isTrashed: false, parentId: null });
+                // Filter to only user's own files at root
+                let ownedFiles = userFiles.filter(f => f.userId.toString() === userIdStr);
+
+                // Apply folder/file filter if specified
+                if (folders === 'true') {
+                    ownedFiles = ownedFiles.filter(f => f.isFolder);
+                } else if (files === 'true') {
+                    ownedFiles = ownedFiles.filter(f => !f.isFolder);
+                }
+
+                // Sort: folders first, then by creation date
+                ownedFiles.sort((a, b) => {
+                    if (a.isFolder && !b.isFolder) return -1;
+                    if (!a.isFolder && b.isFolder) return 1;
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+
+                const itemsWithFields = await addComputedFields(ownedFiles, userId);
+                return res.status(200).json(itemsWithFields);
             }
         }
-
-        if (folders === 'true') query.isFolder = true;
-        if (files === 'true') query.isFolder = false;
-
-        const allItems = await File.find(query).sort({ isFolder: -1, createdAt: -1 });
-        res.status(200).json(allItems);
     } catch (error) {
         console.error("getFiles Error:", error);
         res.status(500).json({ error: "Failed to retrieve files" });
@@ -119,6 +230,11 @@ exports.getFileById = async (req, res) => {
 
         // If it's a file (not folder), get content from C++ server
         let fileData = file.toObject();
+        // Add computed isStarred field for current user
+        fileData.isStarred = (fileData.starredBy || []).some(id => id.toString() === userId.toString());
+        // Add user's role for this file
+        fileData.userRole = role;
+
         if (!file.isFolder && file.storageKey) {
             try {
                 const response = await sendToCppEngine(`get ${file.storageKey}`);
@@ -155,20 +271,34 @@ exports.createFile = async (req, res) => {
     if (!name) return res.status(400).json({ error: "Name is required" });
 
     try {
+        let parentObjectId = null;
+
         if (parentId) {
              if (!isValidId(parentId)) return res.status(404).json({ error: "Parent folder not found" });
 
-             const role = await checkRoleLocal(parentId, userId);
+             // Find the parent folder to get its actual ObjectId
+             const parentFolder = await File.findById(parentId);
+             if (!parentFolder) {
+                 return res.status(404).json({ error: "Parent folder not found" });
+             }
+             if (!parentFolder.isFolder) {
+                 return res.status(400).json({ error: "Parent must be a folder" });
+             }
+
+             const role = await checkRoleLocal(parentFolder._id, userId);
              if (role !== 'owner' && role !== 'writer') {
                  return res.status(403).json({ error: "No write access to parent folder" });
              }
+
+             // Use the actual ObjectId from the found document
+             parentObjectId = parentFolder._id;
         }
 
-        // Create file record in MongoDB (without data - data goes to C++ server)
+        // Create file record in MongoDB using actual ObjectIds
         const newFile = await File.create({
-            userId,
+            userId: new mongoose.Types.ObjectId(userId),
             name,
-            parentId: parentId || null,
+            parentId: parentObjectId,
             isFolder: isFolder || false,
             data: null // Don't store data in MongoDB - it goes to C++ server
         });
@@ -177,8 +307,7 @@ exports.createFile = async (req, res) => {
         if (!isFolder) {
             try {
                 const escapedData = escapeData(data || '');
-                const response = await sendToCppEngine(`post ${newFile.storageKey} ${escapedData}`);
-                console.log("C++ server response for post:", response);
+                await sendToCppEngine(`post ${newFile.storageKey} ${escapedData}`);
             } catch (err) {
                 console.error("C++ server error during file creation:", err);
                 // File is created in MongoDB but content storage failed
@@ -213,12 +342,27 @@ exports.updateFile = async (req, res) => {
              if (!canWrite) return res.status(403).json({ error: "No write permission" });
         }
 
+        // Handle per-user starring
+        if (updates.isStarred !== undefined) {
+            if (updates.isStarred) {
+                // Add user to starredBy array if not already there
+                await File.findByIdAndUpdate(fileId, {
+                    $addToSet: { starredBy: userId }
+                });
+            } else {
+                // Remove user from starredBy array
+                await File.findByIdAndUpdate(fileId, {
+                    $pull: { starredBy: userId }
+                });
+            }
+            delete updates.isStarred; // Don't pass to the regular update
+        }
+
         // If updating file content, send to C++ server
         if (updates.data !== undefined && !file.isFolder) {
             try {
                 const escapedData = escapeData(updates.data);
-                const response = await sendToCppEngine(`post ${file.storageKey} ${escapedData}`);
-                console.log("C++ server response for update:", response);
+                await sendToCppEngine(`post ${file.storageKey} ${escapedData}`);
             } catch (err) {
                 console.error("C++ server error during file update:", err);
             }
@@ -283,8 +427,7 @@ async function deleteRecursive(file) {
     // Delete file content from C++ server if it's a file
     if (!file.isFolder && file.storageKey) {
         try {
-            const response = await sendToCppEngine(`delete ${file.storageKey}`);
-            console.log("C++ server response for delete:", response);
+            await sendToCppEngine(`delete ${file.storageKey}`);
         } catch (err) {
             console.error("Failed to delete file from C++ server:", err);
         }
@@ -338,7 +481,9 @@ exports.searchFiles = async (req, res) => {
             }
         }
 
-        res.status(200).json(allResults);
+        // Add isStarred and userRole computed fields for current user
+        const resultsWithFields = await addComputedFields(allResults, userId);
+        res.status(200).json(resultsWithFields);
     } catch (error) {
         res.status(500).json({ error: error.toString() });
     }

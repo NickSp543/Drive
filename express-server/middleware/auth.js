@@ -49,8 +49,7 @@ const optionalAuth = async (req, res, next) => {
                 }
             }
         } catch (error) {
-            // Error ignored in optional auth
-            console.log("Optional auth check failed:", error.message);
+            // Silently ignore auth errors in optional auth
         }
     }
 
