@@ -175,12 +175,10 @@ If the user already has permission:
 
 ### Permission Denied
 
-If you're not the owner:
+If you're not the owner, you won't see the option to share, only the file owner can manage sharing:
 
-![Permission Denied](images/share-permission-denied.png)
-*Screenshot: Permission denied error*
-
-**Solution:** Only the file owner can manage sharing.
+<img src="images/share-permission-denied.png" alt="No Sharing Permissions" width="33%"><br>
+*Screenshot: Non-owners can't share*
 
 ## API Endpoints
 

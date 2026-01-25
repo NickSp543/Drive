@@ -11,6 +11,8 @@ part5/
 ├── stop-mobile-dev.bat          # Windows stop script
 ├── wiki/                        # Documentation
 ├── data/                        # C++ server file storage
+├── client/                      # React web client
+├── tests/                       # Unit tests for the C++ server
 │
 ├── src/                         # C++ Server Source
 │   ├── Server.cpp               # TCP server main
@@ -315,6 +317,47 @@ services:
     environment:
       - DATA_DIR=/data
 
+  mongo-setup:
+    image: mongo:6.0
+    container_name: drive-mongo-setup
+    restart: "no"
+    depends_on:
+      - mongo
+    command: >
+      sh -lc '
+        mongosh "mongodb://root:rootpass@mongo:27017/admin" --quiet --eval "
+          const dbname = \"driveDB\";
+          const user = \"drive_app\";
+          const pwd  = \"drive_app_pass\";
+          const dbx = db.getSiblingDB(dbname);
+          const existing = dbx.getUser(user);
+          if (!existing) {
+            dbx.createUser({
+              user: user,
+              pwd: pwd,
+              roles: [{ role: \"readWrite\", db: dbname }]
+            });
+            print(\"Created user: \" + user + \" in db: \" + dbname);
+          } else {
+            print(\"User already exists: \" + user + \" in db: \" + dbname);
+          }
+        "
+      '
+    
+  mongo:
+    image: mongo:6.0
+    container_name: drive-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=rootpass
+      - MONGO_INITDB_DATABASE=driveDB
+    volumes:
+      - mongo-data-mobile:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+
   backend:
     build:
       context: ./express-server
@@ -323,11 +366,17 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGO_URI=mongodb://host.docker.internal:27017/driveDB
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGO_URI=mongodb://drive_app:drive_app_pass@mongo:27017/driveDB?authSource=driveDB
+      - JWT_SECRET=your-secret-key-change-in-production
       - CPP_SERVER_HOST=cpp-server
       - CPP_SERVER_PORT=8080
     depends_on:
-      - cpp-server
+      cpp-server:
+        condition: service_started
+      mongo-setup:
+        condition: service_completed_successfully
 ```
 
 ## Key Files Summary
@@ -347,12 +396,8 @@ services:
 
 ## Screenshots
 
-### Project Structure Overview
-![Project Structure](images/project-structure.png)
-*Screenshot: Visual overview of project folders*
-
 ### Docker Containers
-![Docker Containers](images/docker-containers.png)
+![Docker Containers](images/cpp-docker-container.png)
 *Screenshot: Running Docker containers*
 
 ---
