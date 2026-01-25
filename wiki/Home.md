@@ -70,4 +70,4 @@ cd MobileApp
 npx expo start --android
 ```
 
-For detailed instructions, see [Running the System](Running-the-System.md).
+For detailed instructions on running locally (without Docker), see [Running the System](Running-the-System.md).

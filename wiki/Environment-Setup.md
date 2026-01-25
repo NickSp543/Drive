@@ -12,7 +12,7 @@ This guide covers all prerequisites and installation steps needed to run the Dri
 | Docker Desktop | Latest | Container management (C++ server & Backend) |
 | Android Studio | Latest | Android emulator |
 | Git | Latest | Version control |
-| MongoDB | 6+ | Local database (or use Docker) |
+| MongoDB | 6+ | File and User metadata |
 
 ### Installation Links
 

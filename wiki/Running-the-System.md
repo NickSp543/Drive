@@ -14,7 +14,6 @@ This guide explains how to start all services and run the complete Drive App sys
 ## Quick Start (One Command)
 
 First, make sure the following are running on your machine:
-   - MongoDB with the default connection: `mongodb://localhost:27017`
    - Docker Desktop
    - Android emulator (or device)
 
